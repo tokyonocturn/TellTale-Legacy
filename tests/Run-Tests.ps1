@@ -420,6 +420,179 @@ try {
         $ids = @($scenarios.scenarios | ForEach-Object { $_.id })
         Assert-Equal $ids.Count (@($ids | Select-Object -Unique).Count) 'scenario ids must be unique'
     }
+    Write-Host ''
+    Write-Host 'Progression chronology'
+
+    $progressRoot = Join-Path $script:sandbox 'progress'
+    New-Item -ItemType Directory -Path $progressRoot -Force | Out-Null
+    $progressPayload = New-Object byte[] 120
+    for ($i = 0; $i -lt $progressPayload.Length; $i++) { $progressPayload[$i] = [byte](($i * 13 + 7) % 256) }
+    $progressEpoch = [datetime]::new(2026, 11, 5, 10, 0, 0, [DateTimeKind]::Utc)
+    foreach ($spec in @(
+        @{ Name = 'save_1.save'; Minutes = 0 },
+        @{ Name = 'save_6.save'; Minutes = 12 },
+        @{ Name = 'prefs.prop'; Minutes = 24 })) {
+        $path = Join-Path $progressRoot $spec.Name
+        $magic = if ($spec.Name -eq 'prefs.prop') { 'aadeaf64' } else { 'bbdeaf64' }
+        New-FixtureArtifact -Path $path -Magic $magic -DeclaredSize 2048 -Payload $progressPayload
+        (Get-Item -LiteralPath $path).LastWriteTimeUtc = $progressEpoch.AddMinutes($spec.Minutes)
+    }
+    $progressReport = Join-Path $script:sandbox 'save-progress.json'
+
+    Test-Case 'Progression orders saves by write time and reports the slot sequence' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-Progression.ps1') -ScriptArguments @(
+            '-SaveRoot', $progressRoot, '-OutputPath', $progressReport
+        )
+        Assert-Equal 0 $result.ExitCode ("progress exit code: " + $result.StdErr)
+        $report = Get-Content -LiteralPath $progressReport -Raw | ConvertFrom-Json
+        Assert-Equal 3 $report.EntryCount 'entry count'
+        Assert-Equal 2 $report.SaveCount 'save count'
+        Assert-Equal 2 $report.DistinctSlots 'distinct slots'
+        Assert-Equal 'save_1.save' $report.Entries[0].Name 'first entry'
+        Assert-Equal 'prefs.prop' $report.Entries[2].Name 'last entry'
+        Assert-Equal 720 $report.Entries[1].SecondsSincePrevious 'second gap in seconds'
+        Assert-Equal 1440 $report.SpanSeconds 'total span'
+    }
+
+    Test-Case 'Progression refuses to write its report inside the save root' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-Progression.ps1') -ScriptArguments @(
+            '-SaveRoot', $progressRoot, '-OutputPath', (Join-Path $progressRoot 'progress.json')
+        )
+        Assert-Equal 2 $result.ExitCode 'must refuse to write inside the save root'
+        Assert-True ($result.StdErr -like '*Refusing*') 'expected a refusal message'
+    }
+
+    Test-Case 'Progression drift is clean against an identical snapshot' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-Progression.ps1') -ScriptArguments @(
+            '-SaveRoot', $progressRoot, '-OutputPath', $progressReport, '-BaselinePath', $progressReport
+        )
+        Assert-Equal 0 $result.ExitCode ("drift exit code: " + $result.StdErr)
+        $report = Get-Content -LiteralPath $progressReport -Raw | ConvertFrom-Json
+        Assert-True $report.Drift.Unchanged 'drift should report unchanged'
+    }
+
+    Test-Case 'Progression drift reports a modified save and exits 3' {
+        $baselinePath = Join-Path $script:sandbox 'save-progress-baseline.json'
+        Copy-Item -LiteralPath $progressReport -Destination $baselinePath -Force
+        $changed = Join-Path $progressRoot 'save_6.save'
+        $bytes = [System.IO.File]::ReadAllBytes($changed)
+        $bytes[$bytes.Length - 1] = [byte](($bytes[$bytes.Length - 1] + 1) % 256)
+        [System.IO.File]::WriteAllBytes($changed, $bytes)
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-Progression.ps1') -ScriptArguments @(
+            '-SaveRoot', $progressRoot, '-OutputPath', $progressReport, '-BaselinePath', $baselinePath
+        )
+        Assert-Equal 3 $result.ExitCode 'drift must exit 3'
+        $report = Get-Content -LiteralPath $progressReport -Raw | ConvertFrom-Json
+        Assert-True (-not $report.Drift.Unchanged) 'drift should report a change'
+        Assert-True (@($report.Drift.Changed) -contains 'save_6.save') 'changed save should be named'
+    }
+
+    Test-Case 'Watch mode writes start and end markers to the event log' {
+        $watchRoot = Join-Path $script:sandbox 'watch-root'
+        New-Item -ItemType Directory -Path $watchRoot -Force | Out-Null
+        New-FixtureArtifact -Path (Join-Path $watchRoot 'save_1.save') -Magic 'bbdeaf64' -DeclaredSize 512 -Payload $progressPayload
+        $eventLog = Join-Path $script:sandbox 'save-events.jsonl'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-Progression.ps1') -ScriptArguments @(
+            '-SaveRoot', $watchRoot, '-WatchSeconds', '2', '-PollMilliseconds', '400',
+            '-EventLogPath', $eventLog, '-OutputPath', (Join-Path $script:sandbox 'watch-report.json')
+        )
+        Assert-Equal 0 $result.ExitCode ("watch exit code: " + $result.StdErr)
+        $lines = @(Get-Content -LiteralPath $eventLog)
+        Assert-True ($lines.Count -ge 2) 'expected watch-start and watch-end records'
+        Assert-True (($lines[0] | ConvertFrom-Json).Kind -eq 'watch-start') 'first record should be watch-start'
+        Assert-True ((($lines[$lines.Count - 1]) | ConvertFrom-Json).Kind -eq 'watch-end') 'last record should be watch-end'
+    }
+
+    Write-Host ''
+    Write-Host 'Transition readiness'
+
+    $readyGame = Join-Path $script:sandbox 'ready-game'
+    New-Item -ItemType Directory -Path (Join-Path $readyGame 'Pack\default') -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $readyGame 'Pack\WalkingDead102') -Force | Out-Null
+    [System.IO.File]::WriteAllBytes((Join-Path $readyGame 'Pack\default\0_base.ttarch'), (New-Object byte[] 8))
+    foreach ($class in @('data', 'voice', 'ms', 'tx', 'mesh', 'anichore')) {
+        $archiveName = '1_WalkingDead102_english_pc_{0}.ttarch' -f $class
+        [System.IO.File]::WriteAllBytes((Join-Path $readyGame ('Pack\WalkingDead102\' + $archiveName)), (New-Object byte[] 8))
+    }
+    [System.IO.File]::WriteAllBytes((Join-Path $readyGame 'WalkingDead101.exe'), [byte[]](1, 2, 3, 4, 5, 6, 7, 8))
+    $readyHash = (Get-FileHash -LiteralPath (Join-Path $readyGame 'WalkingDead101.exe') -Algorithm SHA256).Hash.ToLowerInvariant()
+    $readyBackup = Join-Path $script:sandbox 'ready-backups'
+    $readyBackupEntry = Join-Path $readyBackup '20261105-000000-test'
+    New-Item -ItemType Directory -Path $readyBackupEntry -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $readyBackupEntry 'manifest.json') -Value '{"CreatedUtc":"2026-11-05 00:00:00Z","Files":[{"RelativePath":"save_2.save"}]}'
+    $readyHosts = Join-Path $script:sandbox 'ready-hosts'
+    Set-Content -LiteralPath $readyHosts -Value @(
+        '# fixture hosts file',
+        '# >>> telltale-legacy offline probe >>>',
+        '127.0.0.1' + [char]9 + 'api.telltalegames.com',
+        '127.0.0.1' + [char]9 + 'meta.telltalegames.com',
+        '# <<< telltale-legacy offline probe <<<'
+    )
+
+    Test-Case 'Transition readiness is ready when content, block, backup and saves all check out' {
+        $reportPath = Join-Path $script:sandbox 'transition-ready.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Test-TransitionReadiness.ps1') -ScriptArguments @(
+            '-GameRoot', $readyGame, '-SaveRoot', $artifactRoot, '-BackupRoot', $readyBackup,
+            '-HostsPath', $readyHosts, '-ExpectedExeSha256', $readyHash, '-SkipProcessCheck', '-OutputPath', $reportPath
+        )
+        Assert-Equal 0 $result.ExitCode ("readiness exit code: " + $result.StdErr)
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        Assert-Equal 'ready' $report.Verdict 'verdict'
+        Assert-Equal 0 $report.FailCount 'fail count'
+        $ep2 = @($report.Findings | Where-Object { $_.Id -eq 'episode-2-content' })[0]
+        Assert-Equal 'pass' $ep2.Level 'episode 2 finding'
+    }
+
+    Test-Case 'Transition readiness fails when Episode 2 is missing an asset class' {
+        $brokenGame = Join-Path $script:sandbox 'broken-game'
+        New-Item -ItemType Directory -Path $brokenGame -Force | Out-Null
+        [System.IO.File]::WriteAllBytes((Join-Path $brokenGame 'WalkingDead101.exe'), [byte[]](1, 2, 3, 4, 5, 6, 7, 8))
+        New-Item -ItemType Directory -Path (Join-Path $brokenGame 'Pack\default') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $brokenGame 'Pack\WalkingDead102') -Force | Out-Null
+        [System.IO.File]::WriteAllBytes((Join-Path $brokenGame 'Pack\default\0_base.ttarch'), (New-Object byte[] 8))
+        foreach ($class in @('data', 'voice', 'ms', 'tx', 'anichore')) {
+            $archiveName = '1_WalkingDead102_english_pc_{0}.ttarch' -f $class
+            [System.IO.File]::WriteAllBytes((Join-Path $brokenGame ('Pack\WalkingDead102\' + $archiveName)), (New-Object byte[] 8))
+        }
+        $reportPath = Join-Path $script:sandbox 'transition-broken.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Test-TransitionReadiness.ps1') -ScriptArguments @(
+            '-GameRoot', $brokenGame, '-SaveRoot', $artifactRoot, '-BackupRoot', $readyBackup,
+            '-HostsPath', $readyHosts, '-ExpectedExeSha256', $readyHash, '-SkipProcessCheck', '-OutputPath', $reportPath
+        )
+        Assert-Equal 2 $result.ExitCode 'readiness must fail closed'
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        Assert-Equal 'not-ready' $report.Verdict 'verdict'
+        $failure = @($report.Findings | Where-Object { $_.Id -eq 'episode-2-content' })[0]
+        Assert-Equal 'fail' $failure.Level 'episode 2 finding'
+        Assert-True ($failure.Detail -like '*mesh*') 'missing class should be named'
+    }
+
+    Test-Case 'Transition readiness fails when a publisher domain is not blocked' {
+        $partialHosts = Join-Path $script:sandbox 'partial-hosts'
+        Set-Content -LiteralPath $partialHosts -Value @(
+            '# >>> telltale-legacy offline probe >>>',
+            '127.0.0.1' + [char]9 + 'api.telltalegames.com',
+            '# <<< telltale-legacy offline probe <<<'
+        )
+        $reportPath = Join-Path $script:sandbox 'transition-partial.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Test-TransitionReadiness.ps1') -ScriptArguments @(
+            '-GameRoot', $readyGame, '-SaveRoot', $artifactRoot, '-BackupRoot', $readyBackup,
+            '-HostsPath', $partialHosts, '-ExpectedExeSha256', $readyHash, '-SkipProcessCheck', '-OutputPath', $reportPath
+        )
+        Assert-Equal 2 $result.ExitCode 'a missing domain must fail the gate'
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        $failure = @($report.Findings | Where-Object { $_.Id -eq 'publisher-blocked' })[0]
+        Assert-Equal 'fail' $failure.Level 'publisher block finding'
+        Assert-True ($failure.Detail -like '*meta.telltalegames.com*') 'unblocked domain should be named'
+    }
+
+    Test-Case 'Offline probe refuses a comma-joined domain list' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Invoke-OfflineProbe.ps1') -ScriptArguments @(
+            '-Action', 'Status', '-Domains', 'api.example,meta.example'
+        )
+        Assert-Equal 2 $result.ExitCode 'a comma-joined domain must be refused'
+        Assert-True ($result.StdErr -like '*Invalid domain*') 'expected an invalid-domain message'
+    }
 }
 finally {
     if (Test-Path -LiteralPath $script:sandbox) {
