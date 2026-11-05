@@ -35,6 +35,16 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+# -File argument binding can pass "a.example,b.example" as a single string. A comma
+# is never valid in a host name, and accepting it silently writes a hosts line that
+# blocks nothing, so refuse it instead of reporting a successful block.
+foreach ($domain in $Domains) {
+    if ($domain -notmatch '^[A-Za-z0-9][A-Za-z0-9.-]*$') {
+        [Console]::Error.WriteLine("Invalid domain '{0}'. Pass one value per domain, not a comma-separated list." -f $domain)
+        exit 2
+    }
+}
+
 $systemHostsPath = Join-Path $env:WINDIR 'System32\drivers\etc\hosts'
 # Note: PowerShell variable names are case-insensitive, so this must NOT be called
 # $hostsPath — that would overwrite the $HostsPath parameter and break the
