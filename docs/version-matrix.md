@@ -7,7 +7,7 @@ that were actually exercised on that exact build.
 
 | Profile | Steam app / build | Exe SHA-256 (first 16) | Link date | Content | Offline startup | Gameplay offline | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `twd-s1-steam-207610` | 207610 / 244978 | `44a5ff21cbb08581` | 2014-04-25 | 112 ttarch v9, Ep1–5 | **Verified** (API blocked) | Not tested | Milestone 1 complete |
+| `twd-s1-steam-207610` | 207610 / 244978 | `44a5ff21cbb08581` | 2014-04-25 | 112 ttarch v9, Ep1–5 | **Verified** (API blocked) | **Verified** Ep1 (attended, API blocked) | Milestone 2 complete |
 
 Full hashes are in `profiles/twd-s1-steam-207610/profile.json`.
 
@@ -21,10 +21,17 @@ Full hashes are in `profiles/twd-s1-steam-207610/profile.json`.
 | Direct exe launch | exits 53, Steam relaunches | session `baseline-online` |
 | First-run save directory creation | `prefs.prop`, `steam_autocloud.vdf` | session snapshots |
 | Preference persistence across exit | file rewritten, size changed | three sessions |
-| New game / save slot | **not tested** | — |
-| Dialogue, choices, cinematics | **not tested** | — |
-| Episode transition | **not tested** | — |
+| New game, Episode 1 gameplay (API blocked) | played to multiple autosaves | `08-offline-gameplay-verification.md` |
+| Save creation | `save_1/5/6.save`, magic `bbdeaf64` | `save-artifacts.json` |
+| Slot list offline | `Game 1 — Episode 1 — 05/11/26 16:53:35` | `captures/04-slot-list.png` |
+| Restart + resume (API blocked) | checkpoint resumed, 0 TCP connections | sessions `m2-offline-resume-1/2` |
+| Repeated offline launch | second resume identical, `save_2` written | session `m2-offline-resume-2` |
+| Save-set integrity across test | added=2, changed=`prefs.prop`, no save altered | `save-drift-m2.json` |
+| Episode packs present | 5 packs, 27/25/21/22/17 archives | `content-packs.json` |
+| Choice persistence | progression verified behaviourally; values not readable | `07-save-and-slot-format.md` |
+| Episode transition | **not tested** — needs full Ep1 playthrough | packs verified present only |
 | Achievements offline | expected unavailable (Steam stats) | static analysis only |
+| 400 Days | **not applicable** — content not installed | `09-400-days-and-achievements.md` |
 | Full Steam Offline Mode run | **not tested** | — |
 
 ## Builds identified but not investigated

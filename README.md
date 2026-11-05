@@ -24,13 +24,17 @@ launcher, a crack, or a content distribution project.
 | Engine | Telltale Tool, Lua 5.1.4, FMOD Ex, Direct3D 9 |
 | Content | 112 `ttarch` v9 archives, 3.55 GiB, 5 content groups |
 | Milestone 1 | **complete** — inventory, profile, offline startup verified, backup/restore verified |
+| Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
 
 Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [engine architecture](docs/rea/02-engine-and-architecture.md),
 [startup sequence](docs/rea/03-startup-sequence.md),
 [online dependencies](docs/rea/04-online-dependencies.md),
 [save architecture](docs/rea/05-save-architecture.md),
-[preservation requirements](docs/rea/06-preservation-requirements.md).
+[preservation requirements](docs/rea/06-preservation-requirements.md),
+[save container and slots](docs/rea/07-save-and-slot-format.md),
+[offline gameplay verification](docs/rea/08-offline-gameplay-verification.md),
+[400 Days and achievements](docs/rea/09-400-days-and-achievements.md).
 
 ## What was actually verified
 
@@ -51,10 +55,22 @@ Not claims — measured on the installed build, with logs:
   `steam_autocloud.vdf`).
 * **Backup and restore are hash-verified end to end**, including tamper rejection
   and non-destructive pre-restore snapshots.
+* **A real session survives offline.** Ep1 was played under the API block, wrote
+  `save_1/5/6.save` plus `prefs.prop`, exited cleanly, and then — twice — the game
+  listed the slot as `Game 1 — Episode 1 — 05/11/26 16:53:35`, resumed the saved
+  checkpoint on CONTINUE, and held **zero TCP connections** throughout. See
+  [docs/rea/08-offline-gameplay-verification.md](docs/rea/08-offline-gameplay-verification.md).
+* **Episode content is verified present, not assumed.** All five packs exist with
+  27/25/21/22/17 archives (`tools/Test-ContentPacks.ps1`).
+* **The save container is opaque.** Magic `bbdeaf64`, a 56-byte header, then a
+  per-file keystream: entropy 7.99, incompressible, no repeating key out to 4,096,
+  XOR of two saves yields noise. No chapter or choice identifier is readable, so
+  no decoding is claimed ([doc 07](docs/rea/07-save-and-slot-format.md)).
 
-Not yet verified (do not assume): gameplay progression past the main menu, save
-slot creation through play, episode transitions, a full machine-offline Steam
-Offline Mode session, and any release other than this Steam build.
+Not yet verified (do not assume): the Episode 1 → 2 transition (needs a full
+playthrough), 400 Days (content not installed), achievement unlocks with Steam
+offline, the semantic content of persisted choices, a full Steam Offline Mode
+session, and any release other than this Steam build.
 
 ## Repository layout
 
@@ -68,8 +84,11 @@ tools/                    Preservation tooling (PowerShell 5.1, no external depe
   Restore-GameProfile.ps1 Verified restore with pre-restore safety copy
   Start-ObservedSession.ps1  Launches/attaches and records session evidence
   Invoke-OfflineProbe.ps1 Reversible hosts-level API block for offline testing
+  Get-SaveArtifacts.ps1   Save container inventory, byte diff and drift detection
+  Test-ContentPacks.ps1   Verifies every profile episode has archives on disk
 tests/                    Automated tests for the tooling (synthetic fixtures)
 docs/                     REA findings, architecture, installation, legal boundaries
+  verification-scenarios.json  Which claims are automated vs attended gameplay
 ```
 
 ## Quick start
@@ -85,7 +104,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\Backup-GameProfile.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\Start-ObservedSession.ps1 `
     -ViaSteam -Label baseline -ObservationSeconds 60 -StopAtEnd
 
-# 4. Run the test suite
+# 4. What does the save folder actually contain, and did anything move?
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-SaveArtifacts.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-SaveArtifacts.ps1 `
+    -BaselinePath docs\rea\data\save-artifacts.json   # exit 0 identical, 3 = drift
+
+# 5. Is every episode's content really installed?
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Test-ContentPacks.ps1
+
+# 6. Run the test suite
 powershell -NoProfile -ExecutionPolicy Bypass -File tests\Run-Tests.ps1
 ```
 
@@ -112,19 +139,22 @@ See [docs/installation.md](docs/installation.md) for prerequisites and details.
 3. **Achievements are online-only.** Steam stats/achievements
    (`com.telltalegames.<episode>.ch.<NN>`) cannot unlock while Steam is offline;
    gameplay and saves are unaffected.
-4. **Saves are local and small.** State lives in the per-user Documents folder, so
-   it is easy to protect, diff and restore — and easy to lose if a reinstall or a
-   profile change happens without a backup.
+4. **Saves are local and small, but not readable.** State lives in the per-user
+   Documents folder, so it is easy to protect, diff and restore — and easy to lose
+   if a reinstall or a profile change happens without a backup. The files are
+   obfuscated, so tooling protects them as opaque bytes and does not pretend to
+   interpret decisions.
 5. **Content is layered, not monolithic.** Episode directories overlay `default`
    with numbered patch archives (`0_*`) taking precedence, which is what makes
    per-episode compatibility profiles possible.
 
 ## Roadmap
 
-* Milestone 2 — drive a new game to a real save slot and verify dialogue,
-  branching choice persistence and episode transitions offline.
-* Milestone 3 — full machine-offline run (Steam Offline Mode) with evidence, plus
-  a save-format reader for progression inspection (no asset extraction).
+* Milestone 3 — play Episode 1 through to the Episode 2 transition offline, and a
+  full machine-offline run with Steam itself in Offline Mode.
+* Milestone 4 — save-container research (keystream/compression identification) so
+  decisions can be verified by content rather than behaviour, without extracting
+  assets.
 * Later — Season 2, 400 Days, and the Definitive Series as **separate** profiles;
   the engine is shared but content layout and DRM differ.
 

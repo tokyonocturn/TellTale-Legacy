@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "twd-s1-steam-207610",
   "displayName": "The Walking Dead (Season 1) - Steam build 244978",
-  "status": "milestone-1-verified",
+  "status": "milestone-2-verified",
   "steamAppId": 207610,
   "steamBuildId": "244978",
   "engine": {
@@ -26,11 +26,26 @@
     "archiveRoot": "Pack",
     "archiveVersion": 9,
     "episodeDirectories": {
-      "default": { "episode": 1, "note": "base game content; directory name is 'default', not WalkingDead101" },
-      "WalkingDead102": { "episode": 2, "note": "confirmed by archive naming" },
-      "WalkingDead103": { "episode": 3, "note": "confirmed by archive naming" },
-      "WalkingDead104": { "episode": 4, "note": "confirmed by archive naming" },
-      "WalkingDead105": { "episode": 5, "note": "confirmed by archive naming and Steam stat IDs (com.telltalegames.WalkingDead105.ch.08)" }
+      "default": {
+        "episode": 1,
+        "note": "base game content; directory name is 'default', not WalkingDead101"
+      },
+      "WalkingDead102": {
+        "episode": 2,
+        "note": "confirmed by archive naming"
+      },
+      "WalkingDead103": {
+        "episode": 3,
+        "note": "confirmed by archive naming"
+      },
+      "WalkingDead104": {
+        "episode": 4,
+        "note": "confirmed by archive naming"
+      },
+      "WalkingDead105": {
+        "episode": 5,
+        "note": "confirmed by archive naming and Steam stat IDs (com.telltalegames.WalkingDead105.ch.08)"
+      }
     },
     "extraContent": {
       "hypothesis": "The 400 Days episode is delivered as back-patch archives named WalkingDead106 (0_20_WalkingDead106_*backpatch_s.ttarch in every episode directory). Not yet confirmed by runtime observation."
@@ -40,7 +55,14 @@
     "saveRootDefault": "%USERPROFILE%\\Documents\\Telltale Games",
     "registryRoot": "HKCU\\Software\\Telltale Games",
     "saveFilePattern": "%s - %02d.save",
-    "preferenceFiles": ["prefs.prop", "prefs_general.prop", "prefs_gamewindow.prop", "prefs_lang.prop", "prefs_language.prop", "game_prefs.prop"],
+    "preferenceFiles": [
+      "prefs.prop",
+      "prefs_general.prop",
+      "prefs_gamewindow.prop",
+      "prefs_lang.prop",
+      "prefs_language.prop",
+      "game_prefs.prop"
+    ],
     "steamStatsNamespace": "com.telltalegames.<PackDirectory>.ch.<NN>"
   },
   "onlineDependencies": {
@@ -62,41 +84,107 @@
   },
   "offline": {
     "startupValidated": true,
+    "gameplayValidated": true,
+    "resumeValidated": true,
     "validatedUtc": "2026-11-05",
     "steamOfflineModeRequired": true,
+    "testEnvironment": {
+      "build": "244978",
+      "executableSha256": "44a5ff21cbb085812c48179259141ff5c83eaeaa3423b4734b43533df0a2528d",
+      "networkCondition": "api.telltalegames.com -> 127.0.0.1 via marked hosts block; Steam reachable",
+      "gameFiles": "unmodified; no DRM interaction"
+    },
     "testedScenarios": [
       {
-        "id": "online-launch",
-        "result": "main menu reached",
-        "evidence": "session baseline-viasteam"
-      },
-      {
         "id": "publisher-api-blocked-launch",
-        "result": "main menu reached with 0 remote network endpoints",
-        "evidence": "session offline-api-blocked; api.telltalegames.com pointed at 127.0.0.1"
+        "mode": "observed",
+        "result": "main menu reached with 0 remote endpoints",
+        "evidence": "sessions 20261105-164027-m2-gameplay-start, 20261105-170025-m2-offline-resume-1"
       },
       {
-        "id": "direct-executable-launch",
-        "result": "exit code 53; SteamAPI_RestartAppIfNecessary hands off to Steam",
-        "evidence": "session baseline-online plus Steam console_log/gameprocess_log"
+        "id": "new-game-and-story-progress",
+        "mode": "manual-attended",
+        "result": "Episode 1 opening act played; autosaves at 16:47, 16:51, 16:53 local",
+        "evidence": "docs/rea/08-offline-gameplay-verification.md; captures 03,06"
       },
       {
-        "id": "first-run-user-state",
-        "result": "prefs.prop and steam_autocloud.vdf created in Documents\\Telltale Games\\The Walking Dead",
-        "evidence": "session save-directory snapshots"
+        "id": "save-creation",
+        "mode": "manual-attended",
+        "result": "save_1, save_6, save_5 written with magic bbdeaf64; prefs.prop rewritten at exit",
+        "evidence": "docs/rea/data/save-artifacts.json; docs/rea/data/saves/20261105-m2-first-saves"
+      },
+      {
+        "id": "slot-list-metadata",
+        "mode": "observed",
+        "result": "slot list shows Game 1 - Episode 1 - 05/11/26 16:53:35 with API blocked",
+        "evidence": "docs/rea/data/captures/04-slot-list.png"
+      },
+      {
+        "id": "clean-exit",
+        "mode": "observed",
+        "result": "in-game EXIT GAME confirms and process exits without error",
+        "evidence": "docs/rea/08-offline-gameplay-verification.md step 7"
+      },
+      {
+        "id": "offline-resume-after-restart",
+        "mode": "observed",
+        "result": "CONTINUE resumed the saved checkpoint into gameplay; save_3 written; 0 TCP connections",
+        "evidence": "sessions 20261105-170025-m2-offline-resume-1, 20261105-170346-m2-offline-resumed-gameplay; capture 06"
+      },
+      {
+        "id": "repeated-offline-launch",
+        "mode": "observed",
+        "result": "second offline launch resumed the same checkpoint; save_2 written; 0 TCP connections",
+        "evidence": "session 20261105-170622-m2-offline-resume-2; captures 07,08"
+      },
+      {
+        "id": "save-set-integrity",
+        "mode": "automated",
+        "result": "drift vs pre-test baseline: added=2, changed=1 (prefs.prop), no pre-existing save altered",
+        "evidence": "docs/rea/data/save-drift-m2.json"
+      },
+      {
+        "id": "content-packs-present",
+        "mode": "automated",
+        "result": "5 episode packs present: 27/25/21/22/17 archives",
+        "evidence": "docs/rea/data/content-packs.json; tools/Test-ContentPacks.ps1"
       },
       {
         "id": "backup-restore-roundtrip",
-        "result": "hash-verified backup and restore, tamper rejection, pre-restore safety copy",
-        "evidence": "tests/Run-Tests.ps1 (9 tests)"
+        "mode": "automated",
+        "result": "hash-verified backup and restore including .save files; tamper rejection; pre-restore safety copy",
+        "evidence": "tests/Run-Tests.ps1 (22 tests)"
+      }
+    ],
+    "partialScenarios": [
+      {
+        "id": "choice-persistence",
+        "result": "progression across the saved checkpoint verified behaviourally",
+        "limitation": "save payload is opaque (entropy 7.98, per-file keystream); decision values cannot be read back",
+        "evidence": "docs/rea/07-save-and-slot-format.md"
       }
     ],
     "notTested": [
-      "gameplay past the main menu",
-      "save slot creation through play",
-      "episode transitions",
-      "full machine-offline run with Steam in Offline Mode",
-      "achievements while Steam is offline"
+      "episode transition to Episode 2 (needs a completed Episode 1 playthrough)",
+      "400 Days (content not installed; only WalkingDead106 backpatch overlays present)",
+      "achievements with Steam offline",
+      "any build other than 244978",
+      "full machine-offline run with Steam itself in Offline Mode"
+    ],
+    "knownGaps": [
+      "slot number selection is unexplained: resuming slot 5 wrote save_3 then save_2",
+      "prefs.prop size-like field at offset 4 is constant in .prop files and not understood",
+      "EPISODE STATUS red badge appears identically online and offline; meaning unestablished"
     ]
+  },
+  "saveFormat": {
+    "filePattern": "save_<N>.save",
+    "saveMagic": "bbdeaf64",
+    "propMagic": "aadeaf64",
+    "headerBytes": 56,
+    "constantHeaderBlock": "fd045547f88beb73c3eddacef97bd26a6758b21d9afe20e7 4ca93aa457fb2f2e",
+    "payloadEntropy": 7.986,
+    "decoded": false,
+    "note": "Opaque per-file keystream and/or compression. No plaintext chapter or choice identifiers. Documented in docs/rea/07-save-and-slot-format.md"
   }
 }

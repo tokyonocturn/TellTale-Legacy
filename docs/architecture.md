@@ -29,6 +29,13 @@ Start-ObservedSession.ps1 ──► docs/rea/data/sessions/<ts>-<label>.json
         ▼
 Backup-GameProfile.ps1 ────► backups/<ts>-<label>/manifest.json + saves/
 Restore-GameProfile.ps1 ◄─── verifies hashes, preserves existing data
+
+Get-SaveArtifacts.ps1 ─────► docs/rea/data/save-artifacts.json
+        │  magic/declared field/header block/entropy per artefact,
+        │  -CompareA/-CompareB byte diff, -BaselinePath drift (exit 3)
+        ▼
+Test-ContentPacks.ps1 ─────► docs/rea/data/content-packs.json
+        │  profile episode map vs installed Pack directories
 ```
 
 ### `Get-GameInventory.ps1`
@@ -77,6 +84,29 @@ front. It deliberately does **not** touch Steam.
 Requires elevation for Block/Unblock. `-Action Status` works unelevated and exists
 so a machine cannot silently be left in a blocked state.
 
+### `Get-SaveArtifacts.ps1`
+
+Read-only save inspection with three modes: inventory, pairwise byte diff, and
+drift against a previous inventory. It validates the container magic
+(`bbdeaf64` saves, `aadeaf64` props), reports the declared field at offset 4, the
+constant header block, slot number and payload entropy, and refuses to write its
+report inside the save root.
+
+Drift is the mechanism that makes "nothing changed across a restart" checkable:
+exit `0` means every artefact hash matches the baseline, exit `3` lists added,
+removed and changed files. In M2 it showed `added=2, changed=prefs.prop`, which is
+exactly the expected footprint of two resumes.
+
+The tool never decodes a payload. Entropy, compression and keystream tests are
+documented in `docs/rea/07-save-and-slot-format.md`; the container is treated as
+opaque bytes on purpose.
+
+### `Test-ContentPacks.ps1`
+
+Checks the profile's `content.episodeDirectories` against `<GameRoot>\Pack`, and
+fails when a directory is missing or contains no `.ttarch`. Without it, "episode 2
+is installed" is an assumption; with it, an absent pack is a failing exit code.
+
 ### Backup / restore
 
 Manifest schema:
@@ -121,6 +151,25 @@ fixtures in a temporary directory:
 * pre-restore preservation with `-Force`;
 * tamper rejection before any write (exit code 2);
 * probe status output shape;
-* fail-closed readiness audit on a missing install.
+* fail-closed readiness audit on a missing install;
+* save-artefact parsing of magic, slot, declared field and hash;
+* tolerance of truncated and mislabelled artefacts;
+* refusal to write a report inside the save root;
+* drift mode: identical set, and a rewritten `prefs.prop` detected;
+* byte diff of divergent vs identical saves with exact offsets;
+* restored save and prefs hash equality;
+* content-pack validator passing a complete map and failing a missing pack;
+* probe parsing of a fixture hosts file without touching real DNS;
+* `docs/verification-scenarios.json` integrity: unique ids, valid modes, and at
+  least one scenario of each mode.
 
-Tests never touch real saves or the installation.
+Tests never touch real saves or the installation. The scenario registry keeps
+machine checks separate from attended gameplay: no test claims a played session,
+and `08-offline-gameplay-verification.md` is the only place gameplay results live.
+
+## Milestone 2 result
+
+The completion criterion — start, save, close, restart, resume with the publisher
+API unavailable — was met twice on build 244978. No game file was modified and no
+Telltale service needed a local replacement, so no compatibility patch exists or
+is planned for this build.
