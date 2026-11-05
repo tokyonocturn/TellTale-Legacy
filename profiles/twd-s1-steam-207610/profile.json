@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "twd-s1-steam-207610",
+  "displayName": "The Walking Dead (Season 1) - Steam build 244978",
+  "status": "milestone-1-verified",
+  "steamAppId": 207610,
+  "steamBuildId": "244978",
+  "engine": {
+    "family": "telltale-tool",
+    "scripting": "Lua 5.1.4",
+    "audio": "FMOD Ex (fmodex.dll)",
+    "archiveFormat": "ttarch v9",
+    "renderer": "Direct3D 9 (d3d9.dll, d3dx9_41.dll)",
+    "input": "DirectInput 8 (DINPUT8.dll)"
+  },
+  "executable": "WalkingDead101.exe",
+  "architecture": "x86",
+  "linkTimestampUtc": "2014-04-25 22:22:10Z",
+  "knownGoodHashes": {
+    "WalkingDead101.exe": "44a5ff21cbb085812c48179259141ff5c83eaeaa3423b4734b43533df0a2528d",
+    "steam_api.dll": "b0fd893eaa8a225510389e04c0802312539a01fd2eb3a1a8a38005cee7f1d10f",
+    "fmodex.dll": "4d0ecbb2e3a60cba9e754ab3724dbbbd11de044a896914aabe01fe45c88ac956",
+    "installscript.vdf": "5dafbf786e5e35c387f680c055bdcd86bc112a95ca37d1b47131314a85483f31"
+  },
+  "content": {
+    "archiveRoot": "Pack",
+    "archiveVersion": 9,
+    "episodeDirectories": {
+      "default": { "episode": 1, "note": "base game content; directory name is 'default', not WalkingDead101" },
+      "WalkingDead102": { "episode": 2, "note": "confirmed by archive naming" },
+      "WalkingDead103": { "episode": 3, "note": "confirmed by archive naming" },
+      "WalkingDead104": { "episode": 4, "note": "confirmed by archive naming" },
+      "WalkingDead105": { "episode": 5, "note": "confirmed by archive naming and Steam stat IDs (com.telltalegames.WalkingDead105.ch.08)" }
+    },
+    "extraContent": {
+      "hypothesis": "The 400 Days episode is delivered as back-patch archives named WalkingDead106 (0_20_WalkingDead106_*backpatch_s.ttarch in every episode directory). Not yet confirmed by runtime observation."
+    }
+  },
+  "userState": {
+    "saveRootDefault": "%USERPROFILE%\\Documents\\Telltale Games",
+    "registryRoot": "HKCU\\Software\\Telltale Games",
+    "saveFilePattern": "%s - %02d.save",
+    "preferenceFiles": ["prefs.prop", "prefs_general.prop", "prefs_gamewindow.prop", "prefs_lang.prop", "prefs_language.prop", "game_prefs.prop"],
+    "steamStatsNamespace": "com.telltalegames.<PackDirectory>.ch.<NN>"
+  },
+  "onlineDependencies": {
+    "steamDrm": {
+      "required": true,
+      "evidence": "WalkingDead101.exe contains a .bind section and imports steam_api.dll (SteamClient012/SteamUser016); SteamAPI_RestartAppIfNecessary is present.",
+      "policy": "Never bypassed. Legitimate Steam Offline Mode with a cached license is the supported offline path."
+    },
+    "steamStats": {
+      "required": false,
+      "evidence": "SteamUserStats callbacks and com.telltalegames.* stat IDs for achievements.",
+      "offlineImpact": "Achievements do not unlock while Steam is offline; gameplay is unaffected."
+    },
+    "telltaleAccount": {
+      "required": false,
+      "evidence": "X-TTG-client / X-TTG-build / Authorization: TTG headers and XAUTH_TT_PCSTM user agent in the executable.",
+      "offlineImpact": "Unverified at runtime; the shipped build is distributed through Steam and no Telltale account UI was reachable in static analysis."
+    }
+  },
+  "offline": {
+    "startupValidated": true,
+    "validatedUtc": "2026-11-05",
+    "steamOfflineModeRequired": true,
+    "testedScenarios": [
+      {
+        "id": "online-launch",
+        "result": "main menu reached",
+        "evidence": "session baseline-viasteam"
+      },
+      {
+        "id": "publisher-api-blocked-launch",
+        "result": "main menu reached with 0 remote network endpoints",
+        "evidence": "session offline-api-blocked; api.telltalegames.com pointed at 127.0.0.1"
+      },
+      {
+        "id": "direct-executable-launch",
+        "result": "exit code 53; SteamAPI_RestartAppIfNecessary hands off to Steam",
+        "evidence": "session baseline-online plus Steam console_log/gameprocess_log"
+      },
+      {
+        "id": "first-run-user-state",
+        "result": "prefs.prop and steam_autocloud.vdf created in Documents\\Telltale Games\\The Walking Dead",
+        "evidence": "session save-directory snapshots"
+      },
+      {
+        "id": "backup-restore-roundtrip",
+        "result": "hash-verified backup and restore, tamper rejection, pre-restore safety copy",
+        "evidence": "tests/Run-Tests.ps1 (9 tests)"
+      }
+    ],
+    "notTested": [
+      "gameplay past the main menu",
+      "save slot creation through play",
+      "episode transitions",
+      "full machine-offline run with Steam in Offline Mode",
+      "achievements while Steam is offline"
+    ]
+  }
+}

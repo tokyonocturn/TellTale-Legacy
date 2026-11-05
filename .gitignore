@@ -1,0 +1,12 @@
+# Local evidence: contains absolute paths, machine state and personal save data
+docs/rea/data/
+
+# User save backups and pre-restore safety copies
+backups/
+*.pre-restore-*/
+
+# Agent/editor scratch and tool caches
+.freebuff/
+threads/
+tools/scratch/
+*.log
