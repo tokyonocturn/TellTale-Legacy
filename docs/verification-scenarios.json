@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "description": "Verification scenarios for Telltale Legacy. Every claim in the docs must map to a scenario here, and every scenario declares whether a machine check or a human at the keyboard produced the evidence. This keeps automated checks from being read as proof of gameplay behaviour.",
+  "modes": {
+    "automated": "Reproducible without the game running; the harness or a tool asserts the outcome.",
+    "manual-attended": "A person plays the game; the agent may only observe, capture evidence and record results."
+  },
+  "scenarios": [
+    {
+      "id": "install-inventory",
+      "milestone": "M1",
+      "mode": "automated",
+      "tool": "tools/Get-GameInventory.ps1",
+      "asserts": "File count, hashes, PE sections including .bind, ttarch versions and content groups."
+    },
+    {
+      "id": "offline-readiness-audit",
+      "milestone": "M1",
+      "mode": "automated",
+      "tool": "tools/Test-OfflineReadiness.ps1",
+      "asserts": "Build identity, archive version, required runtime and save-dir writability; fails closed."
+    },
+    {
+      "id": "save-backup-restore",
+      "milestone": "M1",
+      "mode": "automated",
+      "tool": "tests/Run-Tests.ps1",
+      "asserts": "Hash-verified backup, byte-identical restore, tamper rejection, pre-restore preservation."
+    },
+    {
+      "id": "save-container-header",
+      "milestone": "M2",
+      "mode": "automated",
+      "tool": "tools/Get-SaveArtifacts.ps1",
+      "asserts": "Magic and declared-size fields parse, magic is recognised, truncated input does not crash, output never lands in the save root."
+    },
+    {
+      "id": "save-set-drift",
+      "milestone": "M2",
+      "mode": "automated",
+      "tool": "tools/Get-SaveArtifacts.ps1",
+      "asserts": "A save set is reported identical across a restart, and a rewritten prefs.prop is detected."
+    },
+    {
+      "id": "episode-packs-present",
+      "milestone": "M2",
+      "mode": "automated",
+      "tool": "tools/Test-ContentPacks.ps1",
+      "asserts": "Every profile episode directory exists with at least one archive, so no episode is silently absent."
+    },
+    {
+      "id": "network-independence",
+      "milestone": "M2",
+      "mode": "automated",
+      "tool": "tools/Invoke-OfflineProbe.ps1",
+      "asserts": "The marked hosts block parses correctly and no game socket reaches a remote endpoint while blocked."
+    },
+    {
+      "id": "offline-start-to-menu",
+      "milestone": "M1",
+      "mode": "manual-attended",
+      "evidence": "docs/rea/data/sessions + docs/rea/04-online-dependencies.md",
+      "asserts": "Episode 1 reaches the main menu with the publisher API unreachable."
+    },
+    {
+      "id": "offline-new-game-and-save",
+      "milestone": "M2",
+      "mode": "manual-attended",
+      "evidence": "docs/rea/08-offline-gameplay-verification.md",
+      "asserts": "A new game is started and the game writes save_N.save plus prefs.prop while the API is unreachable."
+    },
+    {
+      "id": "offline-resume-after-restart",
+      "milestone": "M2",
+      "mode": "manual-attended",
+      "evidence": "docs/rea/08-offline-gameplay-verification.md",
+      "asserts": "After a clean exit and relaunch with the API unreachable, the slot list appears and CONTINUE resumes the saved checkpoint."
+    },
+    {
+      "id": "choice-persistence",
+      "milestone": "M2",
+      "mode": "manual-attended",
+      "evidence": "docs/rea/08-offline-gameplay-verification.md",
+      "asserts": "Decisions made before saving remain in effect after the reload.",
+      "status": "partial",
+      "note": "Progression across a checkpoint is verified behaviourally. The container is opaque, so the encoded decision values themselves cannot be read back."
+    },
+    {
+      "id": "episode-transition",
+      "milestone": "M2",
+      "mode": "manual-attended",
+      "evidence": "docs/rea/08-offline-gameplay-verification.md",
+      "asserts": "Completing Episode 1 advances to Episode 2 with the API unreachable.",
+      "status": "not-run",
+      "note": "Requires a full Episode 1 playthrough; packs 102-105 are verified present but the transition itself has not been played."
+    },
+    {
+      "id": "four-hundred-days",
+      "milestone": "M2",
+      "mode": "manual-attended",
+      "evidence": "docs/rea/09-400-days-and-achievements.md",
+      "asserts": "400 Days content is playable offline.",
+      "status": "not-applicable",
+      "note": "Content is not installed: only WalkingDead106 backpatch overlays exist in the five episode packs."
+    }
+  ]
+}

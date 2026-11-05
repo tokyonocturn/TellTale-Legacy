@@ -197,6 +197,229 @@ try {
         )
         Assert-Equal 2 $result.ExitCode ("expected exit 2, stderr: " + $result.StdErr)
     }
+    # ------------------------------------------------------- M2 save evidence
+    function New-FixtureArtifact {
+        param([string]$Path, [string]$Magic, [uint32]$DeclaredSize, [byte[]]$Payload)
+        $headerLength = 56
+        $bytes = New-Object byte[] ($headerLength + $Payload.Length)
+        for ($i = 0; $i -lt 4; $i++) { $bytes[$i] = [Convert]::ToByte($Magic.Substring($i * 2, 2), 16) }
+        $sizeBytes = [BitConverter]::GetBytes($DeclaredSize)
+        [Array]::Copy($sizeBytes, 0, $bytes, 4, 4)
+        [Array]::Copy($Payload, 0, $bytes, $headerLength, $Payload.Length)
+        [System.IO.File]::WriteAllBytes($Path, $bytes)
+    }
+
+    $payload = New-Object byte[] 300
+    for ($i = 0; $i -lt $payload.Length; $i++) { $payload[$i] = [byte](($i * 37 + 11) % 256) }
+
+    $artifactRoot = Join-Path $script:sandbox 'artifacts'
+    New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
+    New-FixtureArtifact -Path (Join-Path $artifactRoot 'save_2.save') -Magic 'bbdeaf64' -DeclaredSize 4096 -Payload $payload
+    New-FixtureArtifact -Path (Join-Path $artifactRoot 'prefs.prop') -Magic 'aadeaf64' -DeclaredSize 900 -Payload $payload
+    $artifactReport = Join-Path $script:sandbox 'save-artifacts.json'
+
+    Write-Host ''
+    Write-Host 'Save artefacts'
+
+    Test-Case 'Save artefact parser reads magic, slot, declared size and hash' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-SaveArtifacts.ps1') -ScriptArguments @(
+            '-SaveRoot', $artifactRoot, '-OutputPath', $artifactReport
+        )
+        Assert-Equal 0 $result.ExitCode ("artifacts exit code: " + $result.StdErr)
+        $report = Get-Content -LiteralPath $artifactReport -Raw | ConvertFrom-Json
+        Assert-Equal 1 $report.SaveCount 'save count'
+        Assert-Equal 1 $report.PropCount 'prop count'
+        Assert-True $report.AllMagicValid 'magic should be recognised'
+        $save = @($report.Artifacts | Where-Object { $_.Name -eq 'save_2.save' })[0]
+        Assert-Equal 2 $save.Slot 'slot number'
+        Assert-Equal 4096 $save.DeclaredSize 'declared size field'
+        Assert-Equal 'bbdeaf64' $save.Magic 'magic value'
+        Assert-Equal 64 $save.Sha256.Length 'sha256 length'
+        Assert-Equal 1 $report.DistinctHeaderBlocks 'fixture header blocks'
+    }
+
+    Test-Case 'Truncated and mislabelled artefacts are reported, not silently accepted' {
+        $edgeRoot = Join-Path $script:sandbox 'artifacts-edge'
+        New-Item -ItemType Directory -Path $edgeRoot -Force | Out-Null
+        [System.IO.File]::WriteAllBytes((Join-Path $edgeRoot 'save_9.save'), ([byte[]](0xbb, 0xde, 0xaf, 0x64, 0x00, 0x01)))
+        [System.IO.File]::WriteAllBytes((Join-Path $edgeRoot 'prefs.prop'), (New-Object byte[] 80))
+        $edgeReport = Join-Path $script:sandbox 'save-artifacts-edge.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-SaveArtifacts.ps1') -ScriptArguments @(
+            '-SaveRoot', $edgeRoot, '-OutputPath', $edgeReport
+        )
+        Assert-Equal 0 $result.ExitCode ("parser should tolerate bad input: " + $result.StdErr)
+        $report = Get-Content -LiteralPath $edgeReport -Raw | ConvertFrom-Json
+        Assert-True (-not $report.AllMagicValid) 'all-zero prop magic should not validate'
+        $truncated = @($report.Artifacts | Where-Object { $_.Name -eq 'save_9.save' })[0]
+        Assert-True ($null -eq $truncated.DeclaredSize) 'six-byte file cannot carry a size field'
+        Assert-Equal 6 $truncated.SizeBytes 'truncated length'
+    }
+
+    Test-Case 'Save inspector refuses to write inside the save root' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-SaveArtifacts.ps1') -ScriptArguments @(
+            '-SaveRoot', $artifactRoot, '-OutputPath', (Join-Path $artifactRoot 'report.json')
+        )
+        Assert-Equal 2 $result.ExitCode 'expected refusal exit 2'
+        Assert-True (-not (Test-Path -LiteralPath (Join-Path $artifactRoot 'report.json'))) 'report was written anyway'
+    }
+
+    Test-Case 'Drift mode reports an unchanged save set as identical' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-SaveArtifacts.ps1') -ScriptArguments @(
+            '-SaveRoot', $artifactRoot, '-BaselinePath', $artifactReport, '-BaselineOutputPath', (Join-Path $script:sandbox 'drift-none.json')
+        )
+        Assert-Equal 0 $result.ExitCode ("drift exit code: " + $result.StdOut + $result.StdErr)
+        $drift = Get-Content -LiteralPath (Join-Path $script:sandbox 'drift-none.json') -Raw | ConvertFrom-Json
+        Assert-True $drift.Unchanged 'save set should be unchanged'
+        Assert-Equal 0 @($drift.Changed).Count 'changed count'
+    }
+
+    Test-Case 'Drift mode detects a rewritten prefs.prop' {
+        $driftRoot = Join-Path $script:sandbox 'artifacts-drift'
+        Copy-Item -LiteralPath $artifactRoot -Destination $driftRoot -Recurse -Force
+        $baselineReport = Join-Path $script:sandbox 'save-artifacts-drift-base.json'
+        $null = Invoke-Script -ScriptPath (Join-Path $tools 'Get-SaveArtifacts.ps1') -ScriptArguments @(
+            '-SaveRoot', $driftRoot, '-OutputPath', $baselineReport
+        )
+        [System.IO.File]::AppendAllText((Join-Path $driftRoot 'prefs.prop'), 'rewritten')
+        $driftOut = Join-Path $script:sandbox 'drift-changed.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-SaveArtifacts.ps1') -ScriptArguments @(
+            '-SaveRoot', $driftRoot, '-BaselinePath', $baselineReport, '-BaselineOutputPath', $driftOut
+        )
+        Assert-Equal 3 $result.ExitCode ("expected drift exit 3, got: " + $result.StdErr)
+        $drift = Get-Content -LiteralPath $driftOut -Raw | ConvertFrom-Json
+        Assert-True (-not $drift.Unchanged) 'drift should be reported'
+        Assert-True (@($drift.Changed) -contains 'prefs.prop') 'prefs.prop should be listed as changed'
+    }
+
+    Test-Case 'Divergent saves are reported with exact differing offsets' {
+        $diffRoot = Join-Path $script:sandbox 'diff'
+        New-Item -ItemType Directory -Path $diffRoot -Force | Out-Null
+        $first = New-Object byte[] 400
+        for ($i = 0; $i -lt $first.Length; $i++) { $first[$i] = [byte]($i % 251) }
+        $second = [byte[]]$first.Clone()
+        $second[60] = 0x01
+        $second[61] = 0xFF
+        [System.IO.File]::WriteAllBytes((Join-Path $diffRoot 'a.save'), $first)
+        [System.IO.File]::WriteAllBytes((Join-Path $diffRoot 'b.save'), $second)
+        $diffOut = Join-Path $script:sandbox 'diff.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-SaveArtifacts.ps1') -ScriptArguments @(
+            '-CompareA', (Join-Path $diffRoot 'a.save'), '-CompareB', (Join-Path $diffRoot 'b.save'),
+            '-CompareOutputPath', $diffOut
+        )
+        Assert-Equal 0 $result.ExitCode ("diff exit code: " + $result.StdErr)
+        $diff = Get-Content -LiteralPath $diffOut -Raw | ConvertFrom-Json
+        Assert-True (-not $diff.Identical) 'files should differ'
+        Assert-Equal 2 $diff.DifferingBytes 'differing byte count'
+        Assert-Equal 60 $diff.FirstDiffOffset 'first differing offset'
+        Assert-Equal 61 $diff.LastDiffOffset 'last differing offset'
+        Assert-Equal 60 $diff.CommonPrefixBytes 'common prefix length'
+    }
+
+    Test-Case 'Identical saves compare as identical' {
+        $diffRoot = Join-Path $script:sandbox 'diff'
+        Copy-Item -LiteralPath (Join-Path $diffRoot 'a.save') -Destination (Join-Path $diffRoot 'a-copy.save') -Force
+        $diffOut = Join-Path $script:sandbox 'diff-same.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-SaveArtifacts.ps1') -ScriptArguments @(
+            '-CompareA', (Join-Path $diffRoot 'a.save'), '-CompareB', (Join-Path $diffRoot 'a-copy.save'),
+            '-CompareOutputPath', $diffOut
+        )
+        Assert-Equal 0 $result.ExitCode ("diff exit code: " + $result.StdErr)
+        $diff = Get-Content -LiteralPath $diffOut -Raw | ConvertFrom-Json
+        Assert-True $diff.Identical 'identical copies should match'
+        Assert-Equal 0 $diff.DifferingBytes 'no differing bytes'
+    }
+
+    Test-Case 'Restored save and prefs match the backup hashes' {
+        $target = Join-Path $script:sandbox 'restore-save-hashes'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Restore-GameProfile.ps1') -ScriptArguments @(
+            '-BackupPath', $backupPath, '-SaveRoot', $target
+        )
+        Assert-Equal 0 $result.ExitCode ("restore exit code: " + $result.StdErr)
+        foreach ($relative in @('The Walking Dead\prefs.prop', 'The Walking Dead\Lee - 01.save')) {
+            $source = Join-Path $saveRoot $relative
+            $restored = Join-Path $target $relative
+            Assert-True (Test-Path -LiteralPath $restored) "missing restored file: $relative"
+            Assert-Equal (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash (Get-FileHash -LiteralPath $restored -Algorithm SHA256).Hash "hash mismatch: $relative"
+        }
+    }
+
+    Write-Host ''
+    Write-Host 'Content packs'
+
+    $packRoot = Join-Path $script:sandbox 'episode-packs'
+    $profileObj = Get-Content -LiteralPath (Join-Path $repoRoot 'profiles\twd-s1-steam-207610\profile.json') -Raw | ConvertFrom-Json
+    $episodeNames = @($profileObj.content.episodeDirectories.PSObject.Properties.Name)
+    foreach ($name in $episodeNames) {
+        $directory = Join-Path $packRoot (Join-Path 'Pack' $name)
+        New-Item -ItemType Directory -Path $directory -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $directory 'content.ttarch') -Value 'archive-fixture' -NoNewline
+    }
+
+    Test-Case 'Content pack validator accepts a complete episode map' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Test-ContentPacks.ps1') -ScriptArguments @(
+            '-GameRoot', $packRoot, '-ProfilePath', (Join-Path $repoRoot 'profiles\twd-s1-steam-207610\profile.json'),
+            '-OutputPath', (Join-Path $script:sandbox 'packs-ok.json')
+        )
+        Assert-Equal 0 $result.ExitCode ("packs exit code: " + $result.StdErr)
+        $report = Get-Content -LiteralPath (Join-Path $script:sandbox 'packs-ok.json') -Raw | ConvertFrom-Json
+        Assert-Equal $episodeNames.Count $report.EpisodeCount 'episode count'
+        Assert-True $report.AllPresent 'every episode should be present'
+    }
+
+    Test-Case 'Content pack validator fails when an episode pack is missing' {
+        $missing = Join-Path $packRoot (Join-Path 'Pack' $episodeNames[-1])
+        Remove-Item -LiteralPath $missing -Recurse -Force
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Test-ContentPacks.ps1') -ScriptArguments @(
+            '-GameRoot', $packRoot, '-ProfilePath', (Join-Path $repoRoot 'profiles\twd-s1-steam-207610\profile.json')
+        )
+        Assert-Equal 2 $result.ExitCode 'expected missing-pack exit 2'
+    }
+
+    Write-Host ''
+    Write-Host 'Network probe fixture'
+
+    Test-Case 'Offline probe parses a fixture hosts file without touching DNS' {
+        $hostsFixture = Join-Path $script:sandbox 'hosts-blocked.txt'
+        $blockedLines = @(
+            '# >>> telltale-legacy offline probe >>>',
+            "127.0.0.1`tapi.telltalegames.com",
+            '# <<< telltale-legacy offline probe <<<'
+        )
+        Set-Content -LiteralPath $hostsFixture -Value ($blockedLines -join "`r`n")
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Invoke-OfflineProbe.ps1') -ScriptArguments @(
+            '-Action', 'Status', '-HostsPath', $hostsFixture
+        )
+        Assert-Equal 0 $result.ExitCode ("probe exit code: " + $result.StdErr)
+        $status = $result.StdOut | ConvertFrom-Json
+        Assert-True $status.Blocked 'block should be detected'
+        Assert-True (@($status.BlockedDomains) -contains 'api.telltalegames.com') 'blocked domain should be listed'
+        Assert-Equal '127.0.0.1' @($status.ResolvesTo)[0].Addresses 'fixture address'
+    }
+
+    Test-Case 'Offline probe reports an unblocked fixture as clean' {
+        $hostsFixture = Join-Path $script:sandbox 'hosts-clean.txt'
+        Set-Content -LiteralPath $hostsFixture -Value "# normal hosts file`r`n127.0.0.1 localhost"
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Invoke-OfflineProbe.ps1') -ScriptArguments @(
+            '-Action', 'Status', '-HostsPath', $hostsFixture
+        )
+        Assert-Equal 0 $result.ExitCode ("probe exit code: " + $result.StdErr)
+        $status = $result.StdOut | ConvertFrom-Json
+        Assert-True (-not $status.Blocked) 'clean hosts file should not report a block'
+    }
+
+    Test-Case 'Verification scenarios separate automated from attended evidence' {
+        $scenarioPath = Join-Path $repoRoot 'docs\verification-scenarios.json'
+        Assert-True (Test-Path -LiteralPath $scenarioPath) 'verification-scenarios.json missing'
+        $scenarios = Get-Content -LiteralPath $scenarioPath -Raw | ConvertFrom-Json
+        Assert-Equal 1 $scenarios.schemaVersion 'schemaVersion'
+        Assert-True (@($scenarios.scenarios).Count -ge 10) 'expected the M1 and M2 scenarios'
+        $modes = @($scenarios.scenarios | ForEach-Object { $_.mode } | Select-Object -Unique)
+        foreach ($mode in $modes) { Assert-True ($mode -eq 'automated' -or $mode -eq 'manual-attended') "unexpected mode: $mode" }
+        Assert-True (@($scenarios.scenarios | Where-Object { $_.mode -eq 'automated' }).Count -ge 5) 'expected automated scenarios'
+        Assert-True (@($scenarios.scenarios | Where-Object { $_.mode -eq 'manual-attended' }).Count -ge 4) 'expected attended scenarios'
+        $ids = @($scenarios.scenarios | ForEach-Object { $_.id })
+        Assert-Equal $ids.Count (@($ids | Select-Object -Unique).Count) 'scenario ids must be unique'
+    }
 }
 finally {
     if (Test-Path -LiteralPath $script:sandbox) {
