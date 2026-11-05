@@ -28,13 +28,20 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Block', 'Unblock', 'Status')][string]$Action = 'Status',
-    [string[]]$Domains = @('api.telltalegames.com')
+    [string[]]$Domains = @('api.telltalegames.com'),
+    [string]$HostsPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$hostsPath = Join-Path $env:WINDIR 'System32\drivers\etc\hosts'
+$systemHostsPath = Join-Path $env:WINDIR 'System32\drivers\etc\hosts'
+# Note: PowerShell variable names are case-insensitive, so this must NOT be called
+# $hostsPath — that would overwrite the $HostsPath parameter and break the
+# $liveResolution check below.
+$effectiveHostsPath = if ($HostsPath) { $HostsPath } else { $systemHostsPath }
+# A caller-supplied hosts file is a fixture: never touch live DNS for it.
+$liveResolution = (-not $HostsPath)
 $beginMarker = '# >>> telltale-legacy offline probe >>>'
 $endMarker = '# <<< telltale-legacy offline probe <<<'
 
@@ -44,8 +51,13 @@ function Test-IsElevated {
     $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+function Get-HostsLines {
+    param([string]$Content)
+    @($Content -split "`r?`n")
+}
+
 function Get-HostsContent {
-    [System.IO.File]::ReadAllText($hostsPath)
+    [System.IO.File]::ReadAllText($effectiveHostsPath)
 }
 
 function Remove-ProbeBlock {
@@ -69,10 +81,18 @@ function Get-ProbeStatus {
         ResolvesTo     = @(
             foreach ($domain in $Domains) {
                 $addresses = @()
-                try {
-                    $addresses = @(Resolve-DnsName -Name $domain -Type A -ErrorAction Stop | Where-Object { $_.IPAddress } | ForEach-Object { $_.IPAddress })
-                } catch { }
-                [pscustomobject]@{ Domain = $domain; Addresses = ($addresses -join ', ') }
+                $resolutionError = $null
+                if ($liveResolution) {
+                    try {
+                        $records = @(Resolve-DnsName -Name $domain -Type A -ErrorAction Stop)
+                        $addresses = @($records | Where-Object { $_.IPAddress } | ForEach-Object { $_.IPAddress })
+                        if ($records.Count -eq 0) { $resolutionError = 'resolver returned no records' }
+                        elseif ($addresses.Count -eq 0) { $resolutionError = ('resolver returned {0} record(s) without an A address' -f $records.Count) }
+                    } catch { $resolutionError = $_.Exception.Message }
+                } else {
+                    $addresses = @(Get-HostsLines -Content $content | Where-Object { $_ -match ('^\s*\S+\s+' + [regex]::Escape($domain) + '\s*$') } | ForEach-Object { ($_ -split '\s+')[0] })
+                }
+                [pscustomobject]@{ Domain = $domain; Addresses = ($addresses -join ', '); ResolutionError = $resolutionError }
             }
         )
     }
@@ -91,7 +111,7 @@ switch ($Action) {
         foreach ($domain in $Domains) { $lines += "127.0.0.1`t$domain" }
         $lines += $endMarker
         $newContent = ($content.TrimEnd() + "`r`n`r`n" + ($lines -join "`r`n") + "`r`n")
-        [System.IO.File]::WriteAllText($hostsPath, $newContent)
+        [System.IO.File]::WriteAllText($effectiveHostsPath, $newContent)
         & ipconfig.exe /flushdns | Out-Null
 
         Start-Sleep -Milliseconds 500
@@ -105,7 +125,7 @@ switch ($Action) {
         if (-not (Test-IsElevated)) { throw 'Unblock requires an elevated shell (hosts file is protected).' }
         $content = Get-HostsContent
         $cleaned = Remove-ProbeBlock -Content $content
-        [System.IO.File]::WriteAllText($hostsPath, $cleaned)
+        [System.IO.File]::WriteAllText($effectiveHostsPath, $cleaned)
         & ipconfig.exe /flushdns | Out-Null
 
         Start-Sleep -Milliseconds 500
