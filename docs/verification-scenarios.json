@@ -102,6 +102,62 @@
       "asserts": "400 Days content is playable offline.",
       "status": "not-applicable",
       "note": "Content is not installed: only WalkingDead106 backpatch overlays exist in the five episode packs."
+    },
+    {
+      "id": "publisher-surface-blocked",
+      "milestone": "M3",
+      "mode": "automated",
+      "tool": "tools/Invoke-OfflineProbe.ps1",
+      "asserts": "Both compiled-in publisher domains (api and meta) resolve to loopback through the marked hosts block, and a comma-joined domain list is refused instead of writing an inert entry."
+    },
+    {
+      "id": "offline-menu-launch",
+      "milestone": "M3",
+      "mode": "automated",
+      "tool": "tools/Start-ObservedSession.ps1",
+      "asserts": "Steam launch reaches the main menu with api and meta blackholed and records zero remote endpoints for the whole session."
+    },
+    {
+      "id": "transition-readiness",
+      "milestone": "M3",
+      "mode": "automated",
+      "tool": "tools/Test-TransitionReadiness.ps1",
+      "asserts": "Build hash, Ep1/Ep2 pack completeness (six asset classes), publisher block, fresh save backup, absent game process, save magic and free space; fails closed with exit 2."
+    },
+    {
+      "id": "progression-chronology",
+      "milestone": "M3",
+      "mode": "automated",
+      "tool": "tools/Get-Progression.ps1",
+      "asserts": "Save set ordered by write time with slot sequence, inter-save gaps and baseline drift (exit 3 on change); refuses to write inside the save root."
+    },
+    {
+      "id": "save-activity-watch",
+      "milestone": "M3",
+      "mode": "automated",
+      "tool": "tools/Get-Progression.ps1 -WatchSeconds",
+      "asserts": "Appends JSONL start/change/end records while a play session runs, preserving checkpoint order that slot reuse would otherwise destroy."
+    },
+    {
+      "id": "episode-1-completion",
+      "milestone": "M3",
+      "mode": "manual-attended",
+      "tool": "tools/Get-Progression.ps1 -WatchSeconds",
+      "asserts": "Episode 1 played to its ending offline with chapter/checkpoint progression, autosaves, slot rotation and the ending sequence recorded; restart preserves completion."
+    },
+    {
+      "id": "episode-2-transition",
+      "milestone": "M3",
+      "mode": "manual-attended",
+      "tool": "tools/Start-ObservedSession.ps1",
+      "asserts": "Episode 2 becomes playable from installed archives alone with the publisher unavailable, and carries the completed Episode 1 state forward."
+    },
+    {
+      "id": "choice-carryover",
+      "milestone": "M3",
+      "mode": "manual-attended",
+      "tool": "tools/Get-Progression.ps1",
+      "asserts": "At least one decision is visible again after save, exit, relaunch and the episode transition (planned observable: the drugstore survivor)."
     }
   ]
 }

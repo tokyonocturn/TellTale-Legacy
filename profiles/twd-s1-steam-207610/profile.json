@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "twd-s1-steam-207610",
   "displayName": "The Walking Dead (Season 1) - Steam build 244978",
-  "status": "milestone-2-verified",
+  "status": "milestone-3-blocked",
   "steamAppId": 207610,
   "steamBuildId": "244978",
   "engine": {
@@ -174,7 +174,8 @@
     "knownGaps": [
       "slot number selection is unexplained: resuming slot 5 wrote save_3 then save_2",
       "prefs.prop size-like field at offset 4 is constant in .prop files and not understood",
-      "EPISODE STATUS red badge appears identically online and offline; meaning unestablished"
+      "EPISODE STATUS red badge appears identically online and offline; meaning unestablished",
+      "Episode 1 to Episode 2 transition untested: no chapter select, so it needs an attended Episode 1 completion; save editing or synthesised input would fabricate the result"
     ]
   },
   "saveFormat": {
@@ -186,5 +187,35 @@
     "payloadEntropy": 7.986,
     "decoded": false,
     "note": "Opaque per-file keystream and/or compression. No plaintext chapter or choice identifiers. Documented in docs/rea/07-save-and-slot-format.md"
+  },
+  "m3": {
+    "status": "blocked-on-attended-playthrough",
+    "verified": false,
+    "publisherSurface": [
+      "api.telltalegames.com",
+      "meta.telltalegames.com"
+    ],
+    "publisherSurfaceNote": "The executable's only Telltale URL literal is https://meta.telltalegames.com/1/; M2 blocked api only, so M3 blocks both.",
+    "observed": [
+      "Offline launch to the main menu with api and meta blackholed held 0 remote endpoints (session 20261105-173323-m3-episode-status-offline).",
+      "Episode 2 is fully local: Pack/WalkingDead102 holds 25 .ttarch archives including all six asset classes (data, voice, ms, tx, mesh, anichore).",
+      "A menu-only visit rewrote prefs.prop while all five saves stayed byte-identical.",
+      "EPISODE STATUS kept its red badge offline, matching the online observation; meaning still unestablished.",
+      "PLAY slot list offline: one save labelled Game 1 / Episode 1 / 05/11/26 17:08:35 plus two empty New Game rows."
+    ],
+    "unverified": [
+      "Episode 1 completion",
+      "Episode 1 to Episode 2 transition",
+      "Choice carry-over into Episode 2",
+      "Post-completion restart persistence"
+    ],
+    "blocker": "Episode 1 has no chapter select; reaching its ending requires roughly two hours of attended narrative play. Synthesised input or save editing would fabricate the result.",
+    "tools": [
+      "tools/Test-TransitionReadiness.ps1",
+      "tools/Get-Progression.ps1"
+    ],
+    "baselineBackup": "backups/20261105-173230-m3-baseline",
+    "progressionBaseline": "docs/rea/data/save-progress-m3-baseline.json",
+    "documentation": "docs/rea/10-episode-transition.md"
   }
 }

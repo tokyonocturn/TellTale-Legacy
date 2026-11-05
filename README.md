@@ -25,6 +25,7 @@ launcher, a crack, or a content distribution project.
 | Content | 112 `ttarch` v9 archives, 3.55 GiB, 5 content groups |
 | Milestone 1 | **complete** — inventory, profile, offline startup verified, backup/restore verified |
 | Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
+| Milestone 3 | **blocked** — offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
 
 Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [engine architecture](docs/rea/02-engine-and-architecture.md),
@@ -150,7 +151,9 @@ See [docs/installation.md](docs/installation.md) for prerequisites and details.
 
 ## Roadmap
 
-* Milestone 3 — play Episode 1 through to the Episode 2 transition offline, and a
+* Milestone 3 — Episode 1 completion and the Episode 2 transition offline; blocked
+  on an attended playthrough because the game has no chapter select (see
+  [the transition analysis](docs/rea/10-episode-transition.md)). Also pending: a
   full machine-offline run with Steam itself in Offline Mode.
 * Milestone 4 — save-container research (keystream/compression identification) so
   decisions can be verified by content rather than behaviour, without extracting

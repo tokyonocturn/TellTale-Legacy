@@ -7,7 +7,7 @@ that were actually exercised on that exact build.
 
 | Profile | Steam app / build | Exe SHA-256 (first 16) | Link date | Content | Offline startup | Gameplay offline | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `twd-s1-steam-207610` | 207610 / 244978 | `44a5ff21cbb08581` | 2014-04-25 | 112 ttarch v9, Ep1–5 | **Verified** (API blocked) | **Verified** Ep1 (attended, API blocked) | Milestone 2 complete |
+| `twd-s1-steam-207610` | 207610 / 244978 | `44a5ff21cbb08581` | 2014-04-25 | 112 ttarch v9, Ep1–5 | **Verified** (API blocked) | **Verified** Ep1 (attended, API blocked) | Milestone 2 complete; M3 blocked on attended playthrough |
 
 Full hashes are in `profiles/twd-s1-steam-207610/profile.json`.
 
@@ -28,8 +28,11 @@ Full hashes are in `profiles/twd-s1-steam-207610/profile.json`.
 | Repeated offline launch | second resume identical, `save_2` written | session `m2-offline-resume-2` |
 | Save-set integrity across test | added=2, changed=`prefs.prop`, no save altered | `save-drift-m2.json` |
 | Episode packs present | 5 packs, 27/25/21/22/17 archives | `content-packs.json` |
+| Publisher surface blocked | api **and** meta to loopback, 0 remote endpoints | session `m3-episode-status-offline` |
+| Transition readiness gate | ready (0 fail, 0 warn) on the real install | `transition-readiness.json` |
+| Save activity harness | progression chronology + drift + JSONL watcher | `save-progress-m3-baseline.json` |
 | Choice persistence | progression verified behaviourally; values not readable | `07-save-and-slot-format.md` |
-| Episode transition | **not tested** — needs full Ep1 playthrough | packs verified present only |
+| Episode transition | **blocked** — needs full Ep1 playthrough; offline launch and Ep2 content verified | `10-episode-transition.md` |
 | Achievements offline | expected unavailable (Steam stats) | static analysis only |
 | 400 Days | **not applicable** — content not installed | `09-400-days-and-achievements.md` |
 | Full Steam Offline Mode run | **not tested** | — |
