@@ -56,6 +56,18 @@ $domains = @('api.telltalegames.com', 'meta.telltalegames.com')
 $evidenceDir = Join-Path $root ('tools\scratch\offline-' + (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss'))
 if (-not $OutputPath) { $OutputPath = Join-Path $root 'docs\rea\data\offline-launch.json' }
 
+# -File binding collapses an array into separate positional arguments, which lands the
+# second domain in -HostsPath. Invoke the probe through -Command with a real array literal
+# so the domain list survives as a list.
+function Invoke-Probe {
+    param([string]$Action, [string[]]$Domains)
+    $quoted = ($Domains | ForEach-Object { "'" + ($_ -replace "'", "''") + "'" }) -join ','
+    $probePath = $probe -replace "'", "''"
+    $command = "& '$probePath' -Action $Action -Domains @($quoted)"
+    $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $command 2>&1
+    [pscustomobject]@{ ExitCode = $LASTEXITCODE; Output = ($output | Out-String) }
+}
+
 function Test-Elevated {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     (New-Object Security.Principal.WindowsPrincipal($identity)).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -123,9 +135,9 @@ if (Test-Path -LiteralPath $backupScript) {
 }
 
 # --- block --------------------------------------------------------------------------
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $probe -Action Block -Domains $domains | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Add-Stage 'block' 'FAILED' "probe exited $LASTEXITCODE"
+$blockResult = Invoke-Probe -Action 'Block' -Domains $domains
+if ($blockResult.ExitCode -ne 0) {
+    Add-Stage 'block' 'FAILED' ("probe exited {0}: {1}" -f $blockResult.ExitCode, $blockResult.Output.Trim())
     Save-Report 22
     exit 22
 }
@@ -134,7 +146,7 @@ $blocked = @($status.BlockedDomains)
 $missing = @($domains | Where-Object { $blocked -notcontains $_ })
 if ($missing.Count -gt 0) {
     Add-Stage 'block' 'FAILED' ("domains not blocked: " + ($missing -join ', '))
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $probe -Action Unblock | Out-Null
+    [void](Invoke-Probe -Action 'Unblock' -Domains $domains)
     Save-Report 22
     exit 22
 }
@@ -210,10 +222,10 @@ try {
 }
 finally {
     # --- always restore -------------------------------------------------------------
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $probe -Action Unblock | Out-Null
+    [void](Invoke-Probe -Action 'Unblock' -Domains $domains)
     Start-Sleep -Milliseconds 300
     $hostsAfter = (Get-FileHash -LiteralPath $hostsPath -Algorithm SHA256).Hash
-    $report | Add-Member -NotePropertyName HostsSha256After -NotePropertyValue $hostsAfter -Force
+    $report['HostsSha256After'] = $hostsAfter
     if ($hostsAfter -eq $hostsBefore) {
         Add-Stage 'hosts-rollback' 'OK' 'hosts file restored byte-identical'
     } else {

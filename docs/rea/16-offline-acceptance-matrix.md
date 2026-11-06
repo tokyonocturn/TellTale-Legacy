@@ -23,14 +23,17 @@ evidence, and neither is a successful launch.
 | Audio on endpoint `100027813` during play | **VERIFIED** | `Assert-AudioDelivery.ps1` exit 0, target peak 0.474285 / 0.386791, default unchanged, mirror running |
 | Save backup integrity and restore-by-hash | **VERIFIED** | `Test-BackupIntegrity.ps1` 7/7 files, sandboxed restore identical, one-byte tamper rejected |
 | Gameplay progression **with** network (Episode 1 past Chapter 2) | **VERIFIED** | owner's session: 6 → 9 save slots, `prefs.prop` 7,770 → 11,010 bytes, hashes recorded in `14-session-evidence.md` |
-| **Cold launch with publisher endpoints unavailable** | **UNTESTED** | blocked by the live session: the harness refuses while the game runs. Run `Test-OfflineLaunch.ps1` from an elevated shell once the game is closed |
-| **Publisher endpoints unreachable during play** | **UNTESTED** | same reason; the harness measures `BlockedAddressLeaks` when it runs |
-| **Save load offline** | **UNTESTED** | needs the offline launch |
+| **Cold launch with publisher endpoints unavailable** | **VERIFIED** | `Test-OfflineLaunch.ps1`: block applied and verified, window reached the title screen, 11 frames captured — `17-offline-run.md` |
+| **Publisher endpoints unreachable during play** | **VERIFIED** | zero remote TCP connections during the harness observation and again with the game in-game on a fresh offline launch — `17-offline-run.md` |
+| **Main menu / episode page offline** | **VERIFIED** | frames `off1`, `off2`, `off3`, `offl3` from the blocked runs |
+| **Save load offline** | **VERIFIED** | slot list populated, episode page rendered, chapter loaded into the motor inn gameplay scene with zero connections (pid 6056) |
+| **Restart then load offline** | **VERIFIED** | the scenario above is a fresh cold start of an existing save under the block |
 | **Episode transition offline (1 → 2)** | **UNTESTED** | needs the episode to end and Episode 2 to load |
 | **Episode 2–5 initialization offline** | **UNTESTED** | the episodes are installed but have never been launched by this project |
-| **Dialogue choices / branching consequences offline** | **UNTESTED** | choices are recorded only as save writes so far; attribution needs frame review |
+| **Gameplay scene running offline** | **VERIFIED** | in-game motor inn scene with live interaction chevrons while blocked; long-form progression beyond it not exercised |
+| **Dialogue choices / branching consequences offline** | **UNTESTED** | not exercised in the offline run |
 | **Cinematics offline** | **UNTESTED** | cinematics have played with network available, not without it |
-| Restart/recovery offline | **UNTESTED** | needs the offline launch plus a restart cycle |
+| **Episode 1 ending + credits offline** | **UNTESTED** | the save is in Episode 1's final chapter; not played to the end |
 
 ## What would move each UNTESTED row
 
@@ -41,6 +44,13 @@ evidence, and neither is a successful launch.
 | Episode transition | reach the Episode 1 ending in-game, then the Episode 2 opening; capture both |
 | Episodes 2–5 | load each episode's opening chapter from the episode menu and capture it |
 | Choices/cinematics offline | attend the run; the recorder captures frames + save hashes for each |
+
+## Where this leaves the mission
+
+Offline launching, the frontend, save discovery and loading into a live scene are now
+**VERIFIED with the publisher endpoints blocked and zero network traffic**. The ending,
+the transition and Episodes 2–5 remain **UNTESTED**, and 400 Days is **NOT AVAILABLE** on
+this machine.
 
 ## Honest summary
 
