@@ -218,6 +218,25 @@
     "progressionBaseline": "docs/rea/data/save-progress-m3-baseline.json",
     "documentation": "docs/rea/10-episode-transition.md"
   },
+  "offlinePatch": {
+    "tag": "twd-s1-v1.0.0",
+    "tool": "tools/Set-GameOfflinePatch.ps1",
+    "endpoints": [
+      "api.telltalegames.com",
+      "meta.telltalegames.com"
+    ],
+    "steamOfflineModeRequired": true,
+    "launchVerification": "VERIFIED",
+    "verified": [
+      "Steam Offline Mode removes the offline launch wait: usable frontend at 11.63 s with the client and game cut off, against no launch in 220 s without it (condition D)",
+      "the installed executable matches the sha256 this patch is written for",
+      "installing and removing both switches restores loginusers.vdf and the hosts file byte-for-byte"
+    ],
+    "untested": [
+      "offline launch on a machine with no network adapter at all; the measurement used a scoped firewall cut-off"
+    ],
+    "documentation": "docs/rea/19-offline-launch-stall.md"
+  },
   "audio": {
     "requiredEndpointName": "100027813",
     "resolvedEndpoint": {
