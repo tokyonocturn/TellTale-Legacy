@@ -435,6 +435,22 @@ try {
         Assert-Equal $before (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash 'preflight must not modify hosts'
     }
 
+    Test-Case 'Offline acceptance harness refuses rather than disturbing live state' {
+        # With a play session live it must refuse (20); from a non-elevated shell it must
+        # refuse (21). Either way it must not touch the hosts file.
+        $hostsPath = Join-Path $env:WINDIR 'System32\drivers\etc\hosts'
+        $before = (Get-FileHash -LiteralPath $hostsPath -Algorithm SHA256).Hash
+        $reportPath = Join-Path $script:sandbox 'offline-harness.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Test-OfflineLaunch.ps1') -ScriptArguments @(
+            '-DryRun', '-OutputPath', $reportPath
+        )
+        Assert-True (@(20, 21) -contains $result.ExitCode) "harness must refuse safely, got $($result.ExitCode)"
+        Assert-Equal $before (Get-FileHash -LiteralPath $hostsPath -Algorithm SHA256).Hash 'a refusal must not modify the hosts file'
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        Assert-Equal $result.ExitCode $report.ExitCode 'the report must record the refusal code'
+        Assert-True (@($report.Stages).Count -ge 1) 'the refusal must be explained in stages'
+    }
+
     Test-Case 'Offline probe reports an unblocked fixture as clean' {
         $hostsFixture = Join-Path $script:sandbox 'hosts-clean.txt'
         Set-Content -LiteralPath $hostsFixture -Value "# normal hosts file`r`n127.0.0.1 localhost"

@@ -24,6 +24,8 @@ launcher, a crack, or a content distribution project.
 | Engine | Telltale Tool, Lua 5.1.4, FMOD Ex, Direct3D 9 |
 | Content | 112 `ttarch` v9 archives, 3.55 GiB, 5 content groups |
 | Milestone 1 | **complete** — inventory, profile, offline startup verified, backup/restore verified |
+| Offline dependencies | **mapped** — one compiled-in publisher URL (`https://meta.telltalegames.com/1/`), a persistent `Established` TLS socket to `api.telltalegames.com` during play, no other endpoints. 400 Days is not installed |
+| Offline acceptance | **not yet tested** — the harness refuses while a live session is running; cold launch, offline save load, the episode transition and Episodes 2–5 are UNTESTED, not claimed |
 | Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
 | Milestone 3 | **blocked** — offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
 | Playthrough (automated) | **in progress** — the input driver was delivering almost nothing: captured coordinates were 26 px low (window vs client) and presses without a preceding mouse-move event were discarded by the engine. Both are fixed; the save now loads through the real frontend and Lee walks, the camera follows and the mouse pans. Still at Episode 1 “Chapter 2: In The Yard”, with the remaining route documented |
@@ -43,7 +45,9 @@ Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [audio routing](docs/rea/11-audio-routing.md),
 [gameplay automation](docs/rea/12-gameplay-automation.md),
 [audio delivery](docs/rea/13-audio-delivery.md),
-[session evidence](docs/rea/14-session-evidence.md).
+[session evidence](docs/rea/14-session-evidence.md),
+[offline dependency map](docs/rea/15-offline-dependency-map.md),
+[offline acceptance matrix](docs/rea/16-offline-acceptance-matrix.md).
 
 ## What was actually verified
 
