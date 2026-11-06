@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "twd-definitive-steam-1449690",
+  "displayName": "The Walking Dead: The Telltale Definitive Series - Steam app 1449690",
+  "status": "blocked-not-installed",
+  "steamAppId": 1449690,
+  "steamBuildId": "",
+  "installPaths": [
+    "F:\\SteamLibrary\\steamapps\\common\\The Walking Dead The Telltale Definitive Series"
+  ],
+  "engine": {
+    "family": "unknown",
+    "note": "Not established on this machine: there is no build to read."
+  },
+  "executable": "",
+  "architecture": "unknown",
+  "linkTimestampUtc": "",
+  "knownGoodHashes": {},
+  "installEvidence": {
+    "manifestPath": "F:\\SteamLibrary\\steamapps\\appmanifest_1449690.acf",
+    "manifestBuildId": "0",
+    "manifestSizeOnDisk": "0",
+    "manifestStateFlags": "1026",
+    "installDirectoryFiles": 0,
+    "observedUtc": "2026-11-06",
+    "reading": "Steam has the app registered for this library but reports no downloaded bytes and the install directory is empty. StateFlags 1026 carries the not-fully-installed bits, so this is a registered, uninstalled app, not a damaged install."
+  },
+  "content": {
+    "archiveRoot": "",
+    "archiveFormat": "",
+    "archiveCount": 0,
+    "episodeDirectories": {}
+  },
+  "onlineDependencies": {
+    "steamDrm": {
+      "required": true,
+      "evidence": "The Definitive Series ships through Steam; the app is registered here.",
+      "policy": "Never bypassed. Steam Offline Mode with a cached licence is the supported offline path."
+    },
+    "publisherServices": {
+      "required": false,
+      "hosts": [],
+      "urls": [],
+      "evidence": "Unknown. Nothing can be read from an executable that is not installed, and this profile does not guess hostnames from other builds: the Definitive Series is a different, later build of the engine.",
+      "runtimeObservation": "Not observed."
+    }
+  },
+  "offlinePatch": {
+    "tag": "",
+    "tool": "tools/Set-GameOfflinePatch.ps1",
+    "endpoints": [],
+    "steamOfflineModeRequired": true,
+    "launchVerification": "UNTESTED",
+    "verified": [
+      "Steam has the app registered for library F: with appid 1449690",
+      "the install directory exists and contains no files, so no build is present to patch"
+    ],
+    "untested": [
+      "everything about the executable, content layout and endpoints: no build is installed",
+      "the offline launch wait on this build"
+    ],
+    "blocker": "Install the app (Steam > The Walking Dead: The Telltale Definitive Series > Install), then run tools/Get-GameInventory.ps1 against the install and a profile plus endpoint set can be written from the real binary. Writing endpoints now would be a guess, and the patch driver refuses a profile without endpoints by design.",
+    "crossReference": "The launch fix itself is Steam's own Offline Mode switch, measured on Season 1 in docs/rea/19-offline-launch-stall.md. That part applies to any Steam game; only the endpoint pin is per build.",
+    "documentation": "docs/rea/20-other-games-offline-patch.md"
+  }
+}
