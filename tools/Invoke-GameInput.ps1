@@ -54,6 +54,19 @@ public class GameInputNative {
     [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr hWnd, out RECT rect);
     [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr hWnd, ref POINT point);
     [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
+    public const uint MOUSEEVENTF_MOVE = 0x0001;
+    public const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
+
+    // SetCursorPos warps the pointer without producing a mouse input event, so a program that
+    // reads mouse input (rather than polling the cursor) never learns the pointer moved. This
+    // injects a real absolute move, which both positions the cursor and delivers the event.
+    public static void MoveAbsolute(int x, int y) {
+        int w = GetSystemMetrics(0), h = GetSystemMetrics(1);
+        uint nx = (uint)Math.Round(x * 65535.0 / (w - 1));
+        uint ny = (uint)Math.Round(y * 65535.0 / (h - 1));
+        mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, nx, ny, 0, UIntPtr.Zero);
+    }
     [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extra);
     [DllImport("user32.dll")] public static extern uint MapVirtualKey(uint code, uint mapType);
     [DllImport("user32.dll")] public static extern uint SendInput(uint count, INPUT[] inputs, int size);
@@ -146,10 +159,16 @@ function Get-ClientPoint {
 function Move-GameCursor {
     param([IntPtr]$WindowHandle, [int]$ClientX, [int]$ClientY)
 
-    $screen = Get-ClientPoint -WindowHandle $WindowHandle -ClientX $ClientX -ClientY $ClientY
-    [void][GameInputNative]::SetCursorPos($screen.X, $screen.Y)
-    Start-Sleep -Milliseconds 120
-    $screen
+    # Telltale's UI hit-tests on mouse-move events, not on the pointer position at the
+    # moment of the press. A press at a point the cursor already occupies therefore lands
+    # in the engine's previous state, and the click is discarded. Nudge first so the engine
+    # always sees a movement into the target before the button goes down.
+    $target = Get-ClientPoint -WindowHandle $WindowHandle -ClientX $ClientX -ClientY $ClientY
+    [GameInputNative]::MoveAbsolute($target.X + 3, $target.Y + 2)
+    Start-Sleep -Milliseconds 60
+    [GameInputNative]::MoveAbsolute($target.X, $target.Y)
+    Start-Sleep -Milliseconds 140
+    $target
 }
 
 function Enable-GameForeground {

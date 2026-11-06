@@ -26,7 +26,7 @@ launcher, a crack, or a content distribution project.
 | Milestone 1 | **complete** — inventory, profile, offline startup verified, backup/restore verified |
 | Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
 | Milestone 3 | **blocked** — offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
-| Playthrough (automated) | **in progress, stopped** — real input drives the game (click-and-hold walks, Esc menus, synthetic WASD does not move Lee); reached Episode 1 “Chapter 2: In The Yard” and replayed it from the chapter start, no story progress beyond its opening shot |
+| Playthrough (automated) | **in progress** — the input driver was delivering almost nothing: captured coordinates were 26 px low (window vs client) and presses without a preceding mouse-move event were discarded by the engine. Both are fixed; the save now loads through the real frontend and Lee walks, the camera follows and the mouse pans. Still at Episode 1 “Chapter 2: In The Yard”, with the remaining route documented |
 | Audio | **routed and measured** — silence was the game's own `VOICE/MUSIC/SOUND` all at 0 (now 10/10/10); the endpoint renders (direct WASAPI tone meters 0.5) but Windows ignores per-app redirection, so a loopback mirror carries the stream to `100027813`: target peaks 0.14–0.77 during dialogue and cinematics while headphones stay at their unrelated floor, across a restart and a chapter change. Default device unchanged |
 
 Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
@@ -70,8 +70,7 @@ Not claims — measured on the installed build, with logs:
 * **The game's audio reaches `100027813` by measurement.** A loopback mirror
   (`tools/Start-AudioMirror.ps1`) carries the default endpoint's stream to it and the
   endpoint's own meter shows 0.40 while the game shows 0.45; `tools/Test-AudioEndpoint.ps1`
-  proves the endpoint renders at all. Episode 1's Chapter 2 still shot does not advance,
-  with or without audio, and that is recorded as unresolved. See
+  proves the endpoint renders at all. See
   [docs/rea/13-audio-delivery.md](docs/rea/13-audio-delivery.md).
 * **Episode content is verified present, not assumed.** All five packs exist with
   27/25/21/22/17 archives (`tools/Test-ContentPacks.ps1`).

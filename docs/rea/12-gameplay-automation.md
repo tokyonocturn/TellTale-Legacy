@@ -168,3 +168,71 @@ log, the save container is opaque, and the scene's script lives inside the encry
 - The last save state is the chapter checkpoint; the pre-run backup taken for this
   session, `backups/20261106-022557-audio-silence-run`, is intact.
 - Episodes 2–5, 400 Days and the episode transition remain untested.
+
+---
+
+## Correction: the "inert chapter" was our input, and it is fixed
+
+Everything above this section concluded that Chapter 2's still shot ignored input and
+left the cause open. That conclusion was wrong about *which side* was broken, and the
+error is worth recording plainly: **the game was receiving almost none of what this
+project sent it.** Two defects in `tools/Invoke-GameInput.ps1` produced it.
+
+### Defect 1 - a 26-pixel vertical offset
+
+`-Action Capture -CaptureMethod Window` saves the **whole window** (1030x797 on this
+machine), but every action takes **client** coordinates (1024x768, origin 394,103). The
+difference is a constant offset of (+3, +26). Every coordinate read off a capture was
+therefore aimed 26 pixels low. Tall menu buttons absorbed it, which is exactly why menus
+appeared to work while small hotspot clicks did nothing.
+
+### Defect 2 - a press with no preceding move
+
+The engine hit-tests on **mouse-move events**. The driver called `SetCursorPos`, which
+warps the pointer without producing an input event at all, then pressed the button 120 ms
+later. When the pointer was already at the target, no move event existed and the press
+was discarded; when it was not, the engine had not yet processed the warp. Either way the
+click landed in the engine's *previous* state.
+
+`SetCursorPos` was replaced with an absolute `mouse_event(MOUSEEVENTF_MOVE |
+MOUSEEVENTF_ABSOLUTE)`, and `Move-GameCursor` now nudges 3x2 pixels away and back before
+any press, so the engine always sees a movement into the target first.
+
+### Measured effect of the fix
+
+| Action | Before | After |
+|---|---|---|
+| Main menu -> slot list -> episode page -> load save | clicks silently dropped; had to be discovered by trial and error across two sessions | works in one pass |
+| Bottom action bar | no hit at any y from 636 to 745 | hit rect found at client y 620; hover highlight appears |
+| Episode paging arrow | worked by luck | works |
+| Walking | click-to-walk appeared dead | WASD walks; clicking walkable ground walks Lee |
+| Camera | "swings on every click" | pans with pointer position, as designed |
+| Pause menu | worked (large buttons, absorbed the offset) | works |
+
+The save was then loaded through the real frontend and Episode 1 resumed in
+**Chapter 2: In The Yard**, with Lee demonstrably walking, the camera following, and the
+mouse panning the view - none of which was true in the earlier runs that produced the
+"frozen" record.
+
+### Where that leaves the playthrough
+
+The chapter is in Clementine's neighbourhood yard. The route for the rest of Episode 1 is
+now taken from a published walkthrough rather than guessed, and is recorded here so the
+next run does not re-derive it:
+
+1. **In The Yard** - examine the tea set and the treehouse in the back yard, then walk up
+   the porch steps and enter the house.
+2. **Meeting Clementine** - search the kitchen cabinets and drawers for the walkie-talkie,
+   search the living room, then play all three answering-machine messages.
+3. Babysitter attack (Q/E prompts, kick icon), then the choice **"look for help before it
+   gets dark" / "get out of here once the sun goes down"** - this is the first
+   consequence-bearing dialogue choice of the episode.
+4. Follow Clementine through the gate, push the car, arrive at Hershel's farm.
+5. **Hershel's Farm** - talk to Katjaa, Clementine, Kenny, Duck, Shawn, then Hershel; then
+   the forced choice **save Shawn or save Duck**, then the fence chase.
+6. Drug store: side with Kenny or Larry, save Clementine, gather supplies, walkie-talkie
+   scene, motor inn (stealth section, give-her-the-gun-or-not), return, save Carley or
+   Doug, defend the door, escape to the motor inn, credits.
+
+Status at the end of this run: steps 1-6 are **not** completed. The game is playable and
+drivable, the save is intact, and the immediate blocker is no longer mechanical.

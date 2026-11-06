@@ -376,7 +376,7 @@
       "chapterReplayedFromStart": true,
       "storyProgressBeyondChapterOpening": false
     },
-    "stoppedAt": "Chapter 2 \"In The Yard\" still shot is inert to every input, re-tested with audio working (click sweep, walking, dragging, key probes, resume, chapter replay); cause not established",
+    "stoppedAt": "Episode 1, Chapter 2 \"In The Yard\" (Clementine neighbourhood yard) - chapter is playable; tea set/treehouse examination and the house entry were not completed this run",
     "openReadings": [
       "a hotspot that was not found (cursor and hotspot highlight are absent from captured frames)",
       "a chapter that cannot advance on this machine (the game audio session stayed active with peak 0 and no dialogue audio or subtitles appeared)"
@@ -402,6 +402,19 @@
     },
     "audioWasNotTheCause": "the chapter stalls identically with measured game audio at 0.44-0.79 peaks",
     "chapter3Reached": false,
-    "dialogueChoiceRecorded": false
+    "dialogueChoiceRecorded": false,
+    "inputDelivery": {
+      "status": "fixed",
+      "defect1": "capture of the whole window (1030x797) was used as if it were client coordinates (1024x768): a constant (+3,+26) offset made every captured coordinate land 26 px low",
+      "defect2": "the engine hit-tests on mouse-move events; SetCursorPos produces none, so a press at an unchanged pointer position was discarded",
+      "fix": "absolute mouse_event(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE) movement plus a 3x2 nudge into the target before every press",
+      "measured": [
+        "frontend: main menu -> slot list -> episode page -> save load completes in one pass",
+        "bottom action bar hit rect found at client y 620 and hover highlight appears",
+        "WASD walks Lee; clicking walkable ground walks Lee; camera pans with the pointer"
+      ],
+      "supersededClaim": "the earlier record that Chapter 2 ignores input was a measurement of the driver, not of the game"
+    },
+    "routeRecorded": "docs/rea/12-gameplay-automation.md carries the full Episode 1 route taken from a published walkthrough"
   }
 }
