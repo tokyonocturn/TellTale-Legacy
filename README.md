@@ -114,7 +114,7 @@ profile is refused rather than patched.
 | A New Frontier | 536220 | 2784143 | `twd-s3-steam-536220` | `twd-s3-v1.0.0` | not yet measured |
 | Michonne | 429570 | 1094475 | `twd-michonne-steam-429570` | `twd-michonne-v1.0.0` | not yet measured |
 | The Final Season | 866800 | 3679591 | `twd-s4-steam-866800` | `twd-s4-v1.0.0` | not yet measured |
-| Definitive Series | 1449690 | 5952618 | `twd-definitive-steam-1449690` | `twd-definitive-v1.0.0` | **verified**, 18.54 s |
+| Definitive Series | 1449690 | 5952618 | `twd-definitive-steam-1449690` | `twd-definitive-v1.0.1` | **verified**, 18.54 s |
 
 ```powershell
 # read-only: install present, build hash match, endpoint pins, client mode
@@ -143,6 +143,8 @@ documents are unchanged; the program lives alongside them.
 | [Inventory](docs/preservation/01-inventory.md) | Every owned installation: app id, build, size, engine, primary binary and hash |
 | [Dependency map](docs/preservation/02-dependency-map.md) | Endpoints read out of each binary, mandatory or optional, plus the community landscape |
 | [Renegade LAN host](docs/preservation/03-renegade-lan.md) | The first implementation milestone, including the five failures it fixed |
+| [PvZ offline acceptance](docs/preservation/04-pvz-offline.md) | The first measured Mode A result: blocked network, a completed level, a save, a restart |
+| [Renegade LAN attempt](docs/preservation/05-renegade-lan-verify.md) | Why the client would not start, the launch path that works, and the packet-level reason co-located discovery fails |
 
 `registry/games.json` lists every title and its per-capability status;
 `games/<id>/profile.json` holds the measured facts for one build. Adding a game
@@ -168,9 +170,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\Stop-RenegadeLanHost.p
 installed and inventoried; Red Alert 3 is a partial download and the Remastered
 Collection has never been downloaded, so neither is analysed. Renegade's LAN host
 is implemented and measured: it enters LAN mode, binds UDP 3373, creates a channel
-and loads a map, with the installation unmodified. That is **not** `LAN VERIFIED`
-— that needs a client to join and play, which needs a second machine. No title is
-`OFFLINE VERIFIED` yet: offline acceptance runs are the next milestone. C&C4 is
+and loads a map, with the installation unmodified. That is **not** `LAN VERIFIED`.
+The 2026-11-06 attempt found why the client would not start — it needs Steam running
+at the same administrator integrity level as the game, which now brings up its menus
+— and then captured the discovery exchange: the server announces itself only to UDP
+port 3373, a port no second socket can take (refused even with `SO_REUSEADDR` set
+before bind) and which LAN mode refuses to move, and it never answers the client's
+query either (measured at wire level). A client on the same machine therefore cannot see the
+host, so the status stays `IMPLEMENTATION IN PROGRESS`
+([what was measured](docs/preservation/05-renegade-lan-verify.md)). Plants vs.
+Zombies GOTY is `OFFLINE VERIFIED` (2026-11-06): with both of its executables
+blocked outbound it completed level 1-1, wrote its save and reloaded that progress
+after a restart, with zero network endpoints throughout — see
+[04-pvz-offline.md](docs/preservation/04-pvz-offline.md). The other ready titles
+still need the same measured run. C&C4 is
 `BLOCKED BY EXTERNAL DEPENDENCY` (EA Blaze account and server-side progression),
 and Friday the 13th's multiplayer is blocked the same way since its backend closed
 on 2024-12-31.

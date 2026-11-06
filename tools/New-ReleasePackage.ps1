@@ -31,7 +31,7 @@
     Emit the manifest objects as JSON instead of a summary.
 
 .EXAMPLE
-    .\tools\New-ReleasePackage.ps1 -ProfileId twd-definitive-steam-1449690 -Tag twd-definitive-v1.0.0
+    .\tools\New-ReleasePackage.ps1 -ProfileId twd-definitive-steam-1449690 -Tag twd-definitive-v1.0.1
 
 .EXAMPLE
     .\tools\New-ReleasePackage.ps1

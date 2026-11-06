@@ -90,7 +90,7 @@
     "unexplainedString": "WDC.exe carries the UTF-16 sentence 'To unlock your game, log in with your Telltale e-mail address and password.' No login gate was exercised, and it is not known whether this build shows it or whether it is a leftover resource. If a sign-in prompt does appear offline, that is a separate problem from the launch wait and is not addressed by this patch."
   },
   "offlinePatch": {
-    "tag": "twd-definitive-v1.0.0",
+    "tag": "twd-definitive-v1.0.1",
     "tool": "tools/Set-GameOfflinePatch.ps1",
     "endpoints": [
       "services.telltalegames.com"

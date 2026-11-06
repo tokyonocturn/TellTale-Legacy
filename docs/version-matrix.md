@@ -53,7 +53,7 @@ verified/untested split are in [20-other-games-offline-patch.md](rea/20-other-ga
 | The Walking Dead: A New Frontier | 536220 | 2784143 | `WalkingDead3.exe` | `twd-s3-v1.0.0` |
 | The Walking Dead: Michonne | 429570 | 1094475 | `WalkingDeadMichonne.exe` | `twd-michonne-v1.0.0` |
 | The Walking Dead: The Final Season | 866800 | 3679591 | `WalkingDead4.exe` | `twd-s4-v1.0.0` |
-| The Walking Dead: The Telltale Definitive Series | 1449690 | 5952618 | `WDC.exe` | `twd-definitive-v1.0.0` |
+| The Walking Dead: The Telltale Definitive Series | 1449690 | 5952618 | `WDC.exe` | `twd-definitive-v1.0.1` |
 
 Not yet analysed: 400 Days as a standalone install. The Definitive Series does
 carry that content (episode code 106), which is noted in its profile.

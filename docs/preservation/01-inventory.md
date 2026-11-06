@@ -74,3 +74,10 @@ Anything claimed about those two would be invented, so nothing is claimed.
 6. **Anti-cheat is present where it matters.** F13 ships EasyAntiCheat, Generals
    and Zero Hour ship PunkBuster (`P2XDLL.DLL`). Neither is bypassed by this
    program; both constrain what multiplayer preservation can honestly promise.
+7. **Some installations are only wrappers.** PvZ GOTY's `PlantsVsZombies.exe`
+   cannot start without the Steam client and extracts the game it actually runs
+   to `C:\ProgramData\PopCap Games\PlantsVsZombies\popcapgame1.exe`, staging
+   assets and saves under `C:\ProgramData\Steam\PlantsVsZombies`. The files in
+   the installation therefore describe the wrapper, not the game. Measured in
+   [04-pvz-offline.md](04-pvz-offline.md); it is the reason that document records
+   two blocked executables and a save path outside the install.

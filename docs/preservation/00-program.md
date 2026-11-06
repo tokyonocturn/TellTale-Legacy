@@ -83,7 +83,9 @@ One file per installed title, `games/<id>/profile.json`:
 | `binaries` | path, role, size, SHA-256, architecture, subsystem, link date, `.bind` presence, imports |
 | `userState` | save/settings locations with the evidence for each, and whether it is verified on this machine |
 | `dependencies` | service, endpoint, protocol, `mandatory`, what it affects, the evidence, community replacement if one exists |
+| `runtimeArtifacts` | files the game creates outside its installation at runtime, with size, lifecycle and evidence |
 | `capabilities` | per-mode status |
+| `verification` | per capability: date, the criteria that were measured with their results, evidence paths, and caveats. Required for any `* VERIFIED` status and checked by the test suite |
 | `staticAnalysis` | method and, explicitly, what it could not see |
 
 Older Telltale profiles (`profiles/<id>/profile.json`, schema 1) are untouched.

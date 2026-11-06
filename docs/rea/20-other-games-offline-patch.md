@@ -41,7 +41,7 @@ requires an account that has signed in on that machine with a cached licence.
 | `twd-s3-steam-536220` | A New Frontier | 536220 | 2784143 | `WalkingDead3.exe` | `services.telltalegames.com` | `twd-s3-v1.0.0` |
 | `twd-michonne-steam-429570` | Michonne | 429570 | 1094475 | `WalkingDeadMichonne.exe` | `services.telltalegames.com` | `twd-michonne-v1.0.0` |
 | `twd-s4-steam-866800` | The Final Season | 866800 | 3679591 | `WalkingDead4.exe` | `services.telltalegames.com` | `twd-s4-v1.0.0` |
-| `twd-definitive-steam-1449690` | Definitive Series | 1449690 | 5952618 | `WDC.exe` | `services.telltalegames.com` | `twd-definitive-v1.0.0` (launch measured, doc 21) |
+| `twd-definitive-steam-1449690` | Definitive Series | 1449690 | 5952618 | `WDC.exe` | `services.telltalegames.com` | `twd-definitive-v1.0.1` (launch measured, doc 21) |
 
 Every row above was read from this machine: the app id and build id from the Steam
 `appmanifest_<appid>.acf`, the executable and its hashes from the install directory itself.

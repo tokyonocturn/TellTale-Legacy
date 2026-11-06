@@ -110,10 +110,19 @@ installation unmodified and the run fully reversible.
 
 **Not proved — and therefore not claimed:**
 
-* That a Renegade **client can see and join** this host. The in-game LAN browser
-  relies on UDP discovery and a join needs the game client; a second machine (or a
-  second instance) is required. Only then can the status move from
-  `IMPLEMENTATION IN PROGRESS` to `LAN VERIFIED`.
+* That a Renegade **client can see and join** this host. The client now starts (it
+  needs Steam running at the same administrator integrity level as the game), but
+  discovery between a client and the server **on the same machine** cannot complete:
+  a packet capture shows the server announcing itself 88 bytes at a time to
+  `255.255.255.255:3373` about eight times a second and never answering the client's
+  query — re-tested at wire level with a receiving socket, which saw not one frame
+  addressed back to it. A corrected shared-port bind
+  test (raw socket, `ExclusiveAddressUse=false` and `SO_REUSEADDR` set before bind)
+  takes 3373 and receives broadcast bytes while the host is stopped, but is refused
+  while the host runs — the server's socket does not permit sharing — and LAN mode
+  ignores `Port`, so a co-located process cannot listen where the beacons go. See
+  [05-renegade-lan-verify.md](05-renegade-lan-verify.md) for both bind results, the
+  capture table and the server console output.
 * That a match can be **played** to completion and that a client disconnect is
   handled.
 * That the same procedure works on any other build. The profile pins build
@@ -142,9 +151,26 @@ too. The installation is never touched, so there is nothing else to revert.
 
 ## Next steps
 
-1. Join from a client on a second machine and play a match — the step that
-   converts this from "host measured" to `LAN VERIFIED`.
-2. Capture the client's discovery behaviour to document what LAN broadcast the
-   server answers.
-3. If a client cannot see the host, record whether direct connect by IP works
-   before changing anything.
+1. **Test discovery across two hosts, which is the configuration the protocol
+   expects.** The capture settled what happens on one machine: 66 beacons to
+   `255.255.255.255:3373` in eight seconds, 6 client queries, and not one packet
+   addressed back to the querier. Beacons are addressed to a fixed port that only
+   the sender can hold here (a shared-mode bind is refused, measured), and LAN mode
+   ignores `Port`, so the only way to test the intended topology is a second PC on
+   the same subnet. Run `tools/scratch/probe-3373.ps1` — or `beacon-listen.ps1`, which
+   has already shown that a 3373 socket receives local broadcast bytes intact — on
+   that machine first: if it receives the 88-byte beacons, the client has something to
+   list.
+2. Join from a client and play a match — the step that converts this from "host
+   measured" to `LAN VERIFIED`.
+3. Drive the client with hardware-level input. The game tracks relative mouse motion
+   and draws its own cursor, so absolute cursor placement does not move it and menu
+   clicks are unreliable.
+
+Findings from the attempt that matter here: the client starts only when **Steam runs
+at the same administrator integrity level** as `Game.dat` (whose sibling carries
+`requireAdministrator`); the client's settings live in
+`HKLM\SOFTWARE\WOW6432Node\Westwood\Renegade` (machine-wide, administrator needed)
+and nothing is written to `Documents\Renegade` or `HKCU\Software\Westwood`; and the
+game runs its own `WWConfig.exe` on a first start, which has to be accepted before
+the game continues.
