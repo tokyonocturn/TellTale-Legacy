@@ -138,10 +138,16 @@ verified/untested lists for that build. No other game's profile is included, and
 assets, archives or saves are ever packaged.
 
 ```powershell
-.\tools\New-ReleasePackage.ps1                                                  # every profile
-.\tools\New-ReleasePackage.ps1 -ProfileId twd-s2-steam-261030 -Tag twd-s2-v1.0.0  # one game
+# one tag, built from that tag's own tree
+.\tools\New-ReleasePackage.ps1 -ProfileId twd-s2-steam-261030 -Tag twd-s2-v1.0.0 -Commit twd-s2-v1.0.0
+
+# every profile at the current commit
+.\tools\New-ReleasePackage.ps1
 ```
 
+Each published package is built from the tree of its own tag, so a release is a snapshot of that
+tag rather than of current `main`: an older tag's package does not carry documents, profiles or
+tools that were written after it, and its notes only link to documents it actually contains.
 Files come from a commit, not from the working tree, so a zip always matches a state that
 exists in git. The script refuses forbidden paths (backups, `dist`, `tools/scratch`,
 `docs/rea/data`, logs) and any file over 4 MB, writes a manifest with a hash per file next to

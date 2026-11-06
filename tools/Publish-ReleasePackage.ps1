@@ -159,7 +159,7 @@ function New-ReleaseBody {
         $Notes.TrimEnd() + "`n`n---`n`n" +
         ("Package: ``{0}``" -f $Manifest.package) + "`n`n" +
         ("SHA-256: ``{0}``" -f $Manifest.sha256) + "`n`n" +
-        ("Built from commit ``{0}``. Per-file hashes are attached to this release as ``manifest-{1}.json``." -f $Manifest.commit, $Manifest.profileId) + "`n"
+        ("Built from the tree of commit ``{0}``, which is the commit this release's tag points at. Per-file hashes are attached to this release as ``manifest-{1}.json``." -f $Manifest.commit, $Manifest.profileId) + "`n"
     )
 }
 

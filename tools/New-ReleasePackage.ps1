@@ -110,7 +110,12 @@ function Get-PackageFiles {
 }
 
 function New-PatchNotes {
-    param([Parameter(Mandatory)]$Profile, [Parameter(Mandatory)][string]$Id, [Parameter(Mandatory)][string]$TagName)
+    param(
+        [Parameter(Mandatory)]$Profile,
+        [Parameter(Mandatory)][string]$Id,
+        [Parameter(Mandatory)][string]$TagName,
+        [string[]]$AvailablePaths = @()
+    )
 
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add("# Offline patch: $($Profile.displayName)")
@@ -173,12 +178,24 @@ function New-PatchNotes {
     $lines.Add('')
     $lines.Add('Launch verification field: ' + $Profile.offlinePatch.launchVerification)
     $lines.Add('')
+    # A package built from an older tag must not point at documents that were written later,
+    # so each note is only added when the file is actually in the packaged tree.
+    $docNotes = @(
+        @{ Path = 'docs/rea/20-other-games-offline-patch.md'; Text = 'the per-game record and status matrix' },
+        @{ Path = 'docs/rea/21-definitive-offline-launch.md'; Text = 'the measured offline launch of the Definitive Series' },
+        @{ Path = 'docs/rea/19-offline-launch-stall.md'; Text = 'what the launch wait is, and the measurement that found it' },
+        @{ Path = 'docs/legal-boundaries.md'; Text = 'what this project does and does not do' }
+    )
     $lines.Add('## Where the details are')
     $lines.Add('')
-    $lines.Add('- docs/rea/20-other-games-offline-patch.md: the per-game record and status matrix')
-    $lines.Add('- docs/rea/21-definitive-offline-launch.md: the measured offline launch of the Definitive Series')
-    $lines.Add('- docs/rea/19-offline-launch-stall.md: what the launch wait is, and the measurement that found it')
-    $lines.Add('- docs/legal-boundaries.md: what this project does and does not do')
+    $docLines = 0
+    foreach ($doc in $docNotes) {
+        if ($AvailablePaths -contains $doc.Path) {
+            $lines.Add(('- {0}: {1}' -f $doc.Path, $doc.Text))
+            $docLines++
+        }
+    }
+    if ($docLines -eq 0) { $lines.Add('- The rest of this repository at the same commit') }
 
     return ($lines -join "`n") + "`n"
 }
@@ -210,7 +227,8 @@ foreach ($id in $profileIds) {
     $fileRecords = New-Object System.Collections.Generic.List[object]
     $zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
     try {
-        foreach ($path in (Get-PackageFiles -Id $id)) {
+        $selected = @(Get-PackageFiles -Id $id)
+        foreach ($path in $selected) {
             $blob = [System.IO.File]::ReadAllBytes((Join-Path $worktreePath $path))
             if ($blob.Length -gt $maxFileBytes) { throw "Refusing to package ${path}: $($blob.Length) bytes" }
             $entry = $zip.CreateEntry($path, [System.IO.Compression.CompressionLevel]::Optimal)
@@ -220,7 +238,7 @@ foreach ($id in $profileIds) {
             $fileRecords.Add([pscustomobject]@{ path = $path; bytes = $blob.Length; sha256 = (Get-Sha256Hex -Bytes $blob) })
         }
 
-        $notes = New-PatchNotes -Profile $profile -Id $id -TagName $Tag
+        $notes = New-PatchNotes -Profile $profile -Id $id -TagName $Tag -AvailablePaths $selected
         $notesBlob = [System.Text.Encoding]::UTF8.GetBytes($notes)
         $notesEntry = $zip.CreateEntry('PATCH.md', [System.IO.Compression.CompressionLevel]::Optimal)
         $notesEntry.LastWriteTime = [DateTimeOffset]$commitDate
