@@ -67,9 +67,11 @@ $shortSha = $commitSha.Substring(0, 7)
 $trackedPaths = @(Invoke-Git -Arguments @('ls-tree', '-r', '--name-only', $commitSha))
 
 # Read the commit through a detached worktree so packaged bytes are the committed bytes,
-# not a text round trip through git show (which would rewrite line endings).
+# not a text round trip through git show. Checkout conversion is switched off for it:
+# with core.autocrlf on, every text file would be rewritten to CRLF and the package would
+# depend on the building machine's git configuration instead of on the commit.
 $worktreePath = Join-Path ([System.IO.Path]::GetTempPath()) ('telltale-legacy-pkg-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-Invoke-Git -Arguments @('worktree', 'add', '--detach', $worktreePath, $commitSha) | Out-Null
+Invoke-Git -Arguments @('-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'worktree', 'add', '--detach', $worktreePath, $commitSha) | Out-Null
 try {
 
 $forbiddenPatterns = @('^backups/', '^dist/', '^\.git/', '^tools/scratch/', '^docs/rea/data/', '\.log$', '\.zip$', '\.bundle$')
