@@ -64,3 +64,44 @@ transition, Episodes 2–5 and the ending are all UNTESTED, and the single reaso
 game has been in an attended session for the whole period in which this work was done. The
 harness that settles them exists and refuses to run until that session ends; running it is
 the next action, not a claim made now.
+
+---
+
+## Update — multi-episode offline drive (2026-11-06, later the same day)
+
+Everything above is the state before the multi-episode drive and is left as written. This
+section supersedes the rows it names; the run record is
+[`18-multiepisode-offline-run.md`](18-multiepisode-offline-run.md).
+
+Block applied throughout: both domains → `127.0.0.1`, hosts hash
+`B90B7D4A3555404288F0B780ADD639523CAED8ABFB25CCBC1E873BEA80C3734`. Restored afterwards to
+`4DA2C479D9A3774B99BF03CECBC1FD26F731816DF9D7BCF076663BB1782B6097` — identical.
+
+| Feature | Status | Evidence |
+|---|---|---|
+| **Episode 1 finale, offline** | **VERIFIED** (playable to its last scene) | restored pre-drive save loaded straight into the finale conversation; live `hoist` chevron on the wall, attic, RV, motel horde with `Examine Zombie`/`Break Wall` widgets and the grab QTE, then the Lee/Clementine closing conversation with the game's own `You made a difficult choice` notice, then the night car scene — 0 remote connections, frames `g1`–`g3`, `hc`–`hd`, `k1`–`k46`, `z1`–`z2` |
+| **Episode 1 ending + credits offline** | **UNTESTED** | the finale ran to its last scene offline, but no credits screen was captured; the session came back in Episode 1 Chapter 1 instead, and nothing in the frames attributes that to the network |
+| **Episode transition offline (1 → 2)** | **UNTESTED** | not exercised: Episodes 2–5 were started through the game's own "generate story decisions for skipped episodes" path, which is not the ending-driven transition |
+| **Episode 2 initialization offline** | **VERIFIED** (third attempt) | forest opening → walker attack → motel chapter with dialogue; `W` moved Lee (1,814,454 px) and the scene cut, 0 remote connections |
+| **Episode 3 initialization offline** | **VERIFIED** | title card → subtitled dialogue → truck scene; ladder click made Lee climb, live Kenny dialogue, `Attach Trailer Axle` widget, 0 remote connections |
+| **Episode 4 initialization offline** | **VERIFIED** | `LOADING` (~100 s) → Savannah/church opening cinematics → `W` walked Lee (1,299,901 px) with the camera following, 0 remote connections |
+| **Episode 5 initialization offline** | **VERIFIED** | morgue opening with live `LOOK AT` / `FIRE EXTINGUISHER` widgets → `W` walked Lee and the scene transitioned (1,549,343 px), 0 remote connections |
+| **Episode 2 opening, first cold load** | **FAILED** (twice), then not reproducible | frozen at `THREE MONTHS LATER` for >8 min: 0 connections, ~110–125 % one core, 464 KB/10 s read, pause menu live, audio peak 0.082031 on `100027813`, and a 9-point click grid plus `W`/`Space`/`Enter`/`E` changed nothing beyond ambient sway; the same prompt played with no stall once Episodes 3–5 had been loaded. Cause **not established**, and not the network |
+| **Episode discovery / unlock state offline** | **VERIFIED** | the game's own EPISODE STATUS screen, block held, lists Episodes 1–5 as `Installed` and 400 Days as `Coming Soon` — `docs/rea/data/20261106-episode-status-offline.png`; each episode page offered `PLAY` and each episode started |
+| **Save creation offline** | **VERIFIED** | new saves written by the game with the block held: `save_11` (Ep2), `save_12` (Ep4), `save_13` (Ep5); `save_9`/`save_7`/`save_10` rewritten during the Episode 1 drive |
+| **Save persistence across restart offline** | **VERIFIED** | clean `EXIT GAME`, cold relaunch, slot row and episode pages rebuilt from the rewritten saves, Episode 1 finale reloaded from the restored profile |
+| **Cinematics (multi-episode) offline** | **VERIFIED** | Episodes 2–5 opening cinematics and the Episode 1 finale played with the block held, with subtitles and audio |
+| **Dialogue choice recording offline** | **VERIFIED** (recording only) | the finale produced the game's own `You made a difficult choice` notice with the block held |
+| **Branching consequences downstream of a choice** | **UNTESTED** | later scenes were not followed far enough to observe the consequence |
+| **Clean exit / no crash, offline** | **VERIFIED** | `Esc` → `MAIN MENU` → dialog `Yes` → frontend, and frontend `EXIT GAME` terminated the process; no `WalkingDead` crash event in the Application log |
+| **Input mapping for driving the game** | **VERIFIED (corrected)** | pause rows are 48 px apart: `RESUME` 410, `SETTINGS` 480, `MAIN MENU` 548, `EXIT GAME` 617 (client); dialog `Yes` 642,745, `No` 1035,745. Earlier "MAIN MENU/EXIT GAME does not respond" failures were clicks landing on `EXIT GAME` at y 598/688 |
+
+### Where this leaves the mission, after this drive
+
+- **Proven offline:** Episodes 1 (finale, playable), 2, 3, 4 and 5 each load and accept real
+  gameplay input with the publisher endpoints blocked and zero remote connections; episode
+  discovery, unlock state, saves, cinematics and audio all work locally.
+- **Not proven:** Episode 1's credits, the ending-driven Episode 1 → Episode 2 transition,
+  and downstream branching consequences. 400 Days is not installed.
+- The one unexplained runtime failure is the intermittent Episode 2 first-load stall, which
+  is a scene/asset-side stall with no network involvement.

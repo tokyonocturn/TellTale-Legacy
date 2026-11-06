@@ -236,3 +236,34 @@ next run does not re-derive it:
 
 Status at the end of this run: steps 1-6 are **not** completed. The game is playable and
 drivable, the save is intact, and the immediate blocker is no longer mechanical.
+
+---
+
+## Correction: pause-menu and frontend coordinates at 1920×1071
+
+The tables above were measured at a 1024×768 client area. At the current display the client
+is 1920×1071 (window `1926×1100` at `-9,14`, client origin `-6,40`, so window coordinates are
+client `+(3,26)`), and one row spacing assumption carried over wrongly: the pause menu rows
+are **48 px** apart, not 90. Earlier "`MAIN MENU` / `EXIT GAME` does not accept clicks"
+failures were clicks at y 598 and 688 that landed on `EXIT GAME` and on nothing,
+respectively.
+
+| Target | Client coordinate |
+|---|---|
+| Pause `RESUME GAME` | 960, 410 |
+| Pause `SETTINGS` | 960, 480 |
+| Pause `MAIN MENU` | 960, 548 |
+| Pause `EXIT GAME` | 960, 617 |
+| In-game exit dialog `Yes` / `No` | 642, 745 / 1035, 745 |
+| Frontend `PLAY` | 500, 338 |
+| Frontend `EPISODE STATUS` | 552, 439 |
+| Frontend `EXIT GAME` | 531, 640 |
+| Slot row `Game 1` | 900, 346 |
+| Slot / episode bottom action bar | 1587, 962 |
+| Episode page arrow, left / right | 270, 94 / 1644, 103 |
+| `BACK` | 186, 961 |
+
+Measured from full-window captures by locating the text bands, then verified by using each
+one: with this map the frontend, all five episode pages, the pause menu, the exit dialog and
+the clean exit each needed a single click. Details in
+[`18-multiepisode-offline-run.md`](18-multiepisode-offline-run.md).
