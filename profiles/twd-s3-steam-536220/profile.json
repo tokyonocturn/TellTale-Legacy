@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "id": "twd-s3-steam-536220",
+  "displayName": "The Walking Dead: A New Frontier - Steam build 2784143",
+  "status": "offline-patch-ready",
+  "steamAppId": 536220,
+  "steamBuildId": "2784143",
+  "installPaths": [
+    "D:\\SteamLibrary\\steamapps\\common\\The Walking Dead - A New Frontier (Season 3)"
+  ],
+  "engine": {
+    "family": "telltale-tool",
+    "audio": "FMOD Studio x64 (fmod64.dll, fmodstudio64.dll)",
+    "compression": "Oodle 4 (oo2core_4_win64.dll)",
+    "archiveFormat": "ttarch2",
+    "architecture": "x64"
+  },
+  "executable": "WalkingDead3.exe",
+  "architecture": "x64",
+  "linkTimestampUtc": "2018-05-16 20:18:51Z",
+  "knownGoodHashes": {
+    "WalkingDead3.exe": "196b0eadde0ee12d07735b1dbaf66bf2c5bd74a4c81f2822d4b35751e972ace7",
+    "WalkingDead3_win7.exe": "e0286827e062cca835b77cfc3ca68731df5caabc01b73e57d1a53bebfc971c58",
+    "WalkingDead3_win8.exe": "eb78eb01bad7f7bb7c2716df105e494d50516590499b09f6fa05975d581dc97b",
+    "steam_api64.dll": "0ee64af072052ab95438fb8e054a68e4d392de941ef867a0124992aafccc7938",
+    "fmod64.dll": "b6896be9679edbefe77908c8e90643a0615fe389454ce35a220bdd729eb4b716",
+    "fmodstudio64.dll": "c725d4f39a360201df6e12741b933f61ef28f2e14bdbe63adf64b76d4a4d6fac",
+    "oo2core_4_win64.dll": "a4d369eb21d486b381b93617f5a5499b7db878e52e50b06eae63ee5893facb7a"
+  },
+  "executableVariants": {
+    "WalkingDead3.exe": "newest of the three (linked 2018-05-16); the profile and the patch target this one",
+    "WalkingDead3_win7.exe": "linked 2016-12-14",
+    "WalkingDead3_win8.exe": "linked 2016-12-20",
+    "note": "installscript.vdf registers all three under HKCU\\SOFTWARE\\Telltale Games; which one Steam launches is decided by Steam's app configuration, not by anything on disk here, so the patch refuses any of the three that does not match the recorded hash."
+  },
+  "content": {
+    "archiveRoot": "archives",
+    "archiveFormat": "ttarch2",
+    "archiveCount": 93,
+    "archiveBytes": 16932794829,
+    "episodeDirectories": {
+      "301": "Episode 1, Ties That Bind Part I",
+      "302": "Episode 2, Ties That Bind Part II",
+      "303": "Episode 3, Above the Law",
+      "304": "Episode 4, Thicker Than Water",
+      "305": "Episode 5, From the Gallows"
+    },
+    "evidence": "Episode numbers come from WD3_pc_PC_EOS_WD301..WD305 archive names in archives and from the per-episode archives/302..305 subdirectories; the mapping was not confirmed by playing each episode on this machine."
+  },
+  "onlineDependencies": {
+    "steamDrm": {
+      "required": true,
+      "evidence": "WalkingDead3.exe imports steam_api64.dll; Steam remains the gate.",
+      "policy": "Never bypassed. Steam Offline Mode with a cached licence is the supported offline path."
+    },
+    "publisherServices": {
+      "required": false,
+      "hosts": [
+        "services.telltalegames.com",
+        "www.telltalegames.com"
+      ],
+      "urls": [
+        "https://services.telltalegames.com",
+        "https://services.telltalegames.com/1/syncfs/"
+      ],
+      "evidence": "String literals inside all three executables in this install, read on this machine. www.telltalegames.com is a store link, not a startup call.",
+      "runtimeObservation": "Not observed. No packet capture or netstat sample was taken while this build was running."
+    }
+  },
+  "offlinePatch": {
+    "tag": "twd-s3-v1.0.0",
+    "tool": "tools/Set-GameOfflinePatch.ps1",
+    "endpoints": [
+      "services.telltalegames.com"
+    ],
+    "steamOfflineModeRequired": true,
+    "launchVerification": "UNTESTED",
+    "verified": [
+      "the installed executable matches the sha256 this patch is written for, so the patch applies to this build only",
+      "the publisher endpoint was located as a string literal in all three shipped executables",
+      "installing and removing the endpoint pin restores the hosts file byte-for-byte (same mechanics as tests/Run-Tests.ps1 covers for the shared tool)"
+    ],
+    "untested": [
+      "the offline launch wait on this build: no launch was timed under a network cut-off",
+      "gameplay, saves, episode transitions and achievements offline on this build",
+      "which of the three executables Steam actually launches"
+    ],
+    "crossReference": "The launch fix itself is Steam's own Offline Mode switch, measured on Season 1 in docs/rea/19-offline-launch-stall.md (condition D: usable frontend at 11.63 s with the client and game cut off, against no launch in 220 s without it). It is a client-wide setting, not a per-game one.",
+    "documentation": "docs/rea/20-other-games-offline-patch.md"
+  }
+}
