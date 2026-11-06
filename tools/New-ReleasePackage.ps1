@@ -59,7 +59,9 @@ function Invoke-Git {
     return $output
 }
 
-$commitSha = (Invoke-Git -Arguments @('rev-parse', $Commit)).Trim()
+# Peel to a commit: an annotated tag's own object id is not a commit, and recording it as the
+# build commit would misdescribe what the package was built from.
+$commitSha = (Invoke-Git -Arguments @('rev-parse', ($Commit + '^{commit}'))).Trim()
 $commitDate = [datetimeoffset]::Parse((Invoke-Git -Arguments @('log', '-1', '--format=%cI', $commitSha)).Trim())
 $shortSha = $commitSha.Substring(0, 7)
 $trackedPaths = @(Invoke-Git -Arguments @('ls-tree', '-r', '--name-only', $commitSha))
