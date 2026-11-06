@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "twd-s4-steam-866800",
+  "displayName": "The Walking Dead: The Final Season - Steam build 3679591",
+  "status": "offline-patch-ready",
+  "steamAppId": 866800,
+  "steamBuildId": "3679591",
+  "installPaths": [
+    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\The Walking Dead The Final Season"
+  ],
+  "engine": {
+    "family": "telltale-tool",
+    "audio": "FMOD Studio x64 (fmod64.dll, fmodstudio64.dll)",
+    "compression": "Oodle 5 (oo2core_5_win64.dll)",
+    "video": "TTMediaEngine64.dll",
+    "archiveFormat": "ttarch2",
+    "architecture": "x64"
+  },
+  "executable": "WalkingDead4.exe",
+  "architecture": "x64",
+  "linkTimestampUtc": "2019-02-07 19:17:57Z",
+  "knownGoodHashes": {
+    "WalkingDead4.exe": "165c90d1e071184835f6213e05c250bf9004ea4503ffcb4e1e48c9c127f491c7",
+    "steam_api64.dll": "0ee64af072052ab95438fb8e054a68e4d392de941ef867a0124992aafccc7938",
+    "fmod64.dll": "d94745b9908ebb74b07f283e4c6621c43e37709b9fa9c949e64b1fa26db5c1f8",
+    "fmodstudio64.dll": "32f16998fddf75cebb051ea5a12d2bf2ee3f0f2ef4d5d9c2f03c85d4fc94e8c9",
+    "oo2core_5_win64.dll": "df9b57b29df860d3d3248e2e7f1799cb414be48f09863678c3e6791c6915edc3",
+    "TTMediaEngine64.dll": "a50a7f00bf8d28ab3ceb645344e86e68e3d2ec97935dcd94c0d8e31cc744b64a"
+  },
+  "content": {
+    "archiveRoot": "Archives",
+    "archiveFormat": "ttarch2",
+    "archiveCount": 173,
+    "archiveBytes": 14636881591,
+    "episodeDirectories": {
+      "401": "Episode 1, Done Running",
+      "402": "Episode 2, Suffer the Children",
+      "403": "Episode 3, Broken Toys",
+      "404": "Episode 4, Take Us Back"
+    },
+    "evidence": "Episode numbers come from WD4_PC_401..404 archive names in Archives, alongside per-language dialogue and menu sets; the mapping was not confirmed by playing each episode on this machine."
+  },
+  "onlineDependencies": {
+    "steamDrm": {
+      "required": true,
+      "evidence": "WalkingDead4.exe imports steam_api64.dll; Steam remains the gate.",
+      "policy": "Never bypassed. Steam Offline Mode with a cached licence is the supported offline path."
+    },
+    "publisherServices": {
+      "required": false,
+      "hosts": [
+        "services.telltalegames.com",
+        "www.telltalegames.com"
+      ],
+      "urls": [
+        "https://services.telltalegames.com",
+        "https://services.telltalegames.com/1/syncfs/"
+      ],
+      "evidence": "String literals inside WalkingDead4.exe, read on this machine. www.telltalegames.com is a store link, not a startup call.",
+      "runtimeObservation": "Not observed. No packet capture or netstat sample was taken while this build was running."
+    }
+  },
+  "offlinePatch": {
+    "tag": "twd-s4-v1.0.0",
+    "tool": "tools/Set-GameOfflinePatch.ps1",
+    "endpoints": [
+      "services.telltalegames.com"
+    ],
+    "steamOfflineModeRequired": true,
+    "launchVerification": "UNTESTED",
+    "verified": [
+      "the installed executable matches the sha256 this patch is written for, so the patch applies to this build only",
+      "the publisher endpoint was located as a string literal in the shipped executable",
+      "installing and removing the endpoint pin restores the hosts file byte-for-byte (same mechanics as tests/Run-Tests.ps1 covers for the shared tool)"
+    ],
+    "untested": [
+      "the offline launch wait on this build: no launch was timed under a network cut-off",
+      "gameplay, saves, episode transitions and achievements offline on this build",
+      "whether the Episode 2-3 publisher change (Athlon/Skybound era) added a second endpoint this build no longer carries"
+    ],
+    "crossReference": "The launch fix itself is Steam's own Offline Mode switch, measured on Season 1 in docs/rea/19-offline-launch-stall.md (condition D: usable frontend at 11.63 s with the client and game cut off, against no launch in 220 s without it). It is a client-wide setting, not a per-game one.",
+    "documentation": "docs/rea/20-other-games-offline-patch.md"
+  }
+}
