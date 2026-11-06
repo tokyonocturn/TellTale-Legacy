@@ -15,7 +15,12 @@
     Telltale Legacy never bypasses licensing.
 
 .PARAMETER Action
-    Block, Unblock, or Status.
+    Block, Unblock, Status, or Preflight.
+
+    Preflight is read-only and needs no elevation: it reports whether a Block could be
+    applied, what the hosts file currently looks like (including its SHA-256, so a later
+    Unblock can be shown to restore the same bytes), where the API domains currently
+    resolve, and what network connections the running game holds.
 
 .PARAMETER Domains
     Domains to block. Defaults to the endpoints observed in REA session logs.
@@ -27,7 +32,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Block', 'Unblock', 'Status')][string]$Action = 'Status',
+    [ValidateSet('Block', 'Unblock', 'Status', 'Preflight')][string]$Action = 'Status',
     [string[]]$Domains = @('api.telltalegames.com'),
     [string]$HostsPath = ''
 )
@@ -113,8 +118,48 @@ switch ($Action) {
         Get-ProbeStatus | ConvertTo-Json -Depth 5
     }
 
+    'Preflight' {
+        # Read-only readiness report. Nothing is written, so this is safe to run while a
+        # play session is live: proving the offline path must wait until the game is closed.
+        $status = Get-ProbeStatus
+        $elevated = Test-IsElevated
+        $hostsHash = (Get-FileHash -LiteralPath $effectiveHostsPath -Algorithm SHA256).Hash
+        $game = Get-Process WalkingDead101 -ErrorAction SilentlyContinue | Select-Object -First 1
+        $connections = @()
+        if ($game) {
+            try {
+                $connections = @(Get-NetTCPConnection -OwningProcess $game.Id -ErrorAction Stop |
+                    Select-Object State, LocalAddress, LocalPort, RemoteAddress, RemotePort)
+            } catch { $connections = @() }
+        }
+        $remote = @($connections | Where-Object { $_.RemoteAddress -and $_.RemoteAddress -notin @('0.0.0.0', '::', '127.0.0.1', '::1') })
+        $blockers = @()
+        if ($liveResolution -and -not $elevated) { $blockers += 'needs-elevation: Block/Unblock require an administrator shell' }
+        if ($game) { $blockers += 'game-running: the offline launch cannot be proved while a session is live' }
+        [pscustomobject]@{
+            Action          = 'Preflight'
+            HostsPath       = $effectiveHostsPath
+            LiveHosts       = $liveResolution
+            Elevated        = $elevated
+            CurrentlyBlocked = $status.Blocked
+            BlockedDomains  = $status.BlockedDomains
+            HostsSha256     = $hostsHash
+            Domains         = $status.ResolvesTo
+            Game            = [pscustomobject]@{
+                Running     = [bool]$game
+                Pid         = if ($game) { $game.Id } else { $null }
+                Connections = @($connections | ForEach-Object { "$($_.State) $($_.RemoteAddress):$($_.RemotePort)" })
+                RemoteConnections = $remote.Count
+            }
+            Ready           = ($blockers.Count -eq 0)
+            Blockers        = $blockers
+        } | ConvertTo-Json -Depth 6
+        if ($liveResolution -and -not $elevated) { exit 7 }
+        exit 0
+    }
+
     'Block' {
-        if (-not (Test-IsElevated)) { throw 'Block requires an elevated shell (hosts file is protected).' }
+        if ($liveResolution -and -not (Test-IsElevated)) { throw 'Block requires an elevated shell (hosts file is protected).' }
         $content = Get-HostsContent
         $content = Remove-ProbeBlock -Content $content
         $lines = @($beginMarker, '# Temporary block added by Telltale Legacy to test offline behaviour.', '# Remove with: Invoke-OfflineProbe.ps1 -Action Unblock')
@@ -132,7 +177,7 @@ switch ($Action) {
     }
 
     'Unblock' {
-        if (-not (Test-IsElevated)) { throw 'Unblock requires an elevated shell (hosts file is protected).' }
+        if ($liveResolution -and -not (Test-IsElevated)) { throw 'Unblock requires an elevated shell (hosts file is protected).' }
         $content = Get-HostsContent
         $cleaned = Remove-ProbeBlock -Content $content
         [System.IO.File]::WriteAllText($effectiveHostsPath, $cleaned)

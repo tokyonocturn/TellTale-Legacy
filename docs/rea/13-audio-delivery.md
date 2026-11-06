@@ -154,3 +154,32 @@ VBVMR_SetParameterFloat("Strip[4].A1", 0)     # via the remote API
 # 4. measure all endpoints while the game plays
 .\tools\Get-AudioRoute.ps1
 ```
+
+---
+
+## Durable verification (added after the live session)
+
+The mechanism above is only worth as much as the ability to re-check it. That is now a
+single read-only command, `tools/Assert-AudioDelivery.ps1`, which resolves the endpoint by
+**Core Audio device id** (the friendly name has three stale duplicates on this machine),
+requires it to be `active`, requires it to **not** be the system default, requires the
+mirror to be running, and requires a measured non-zero peak on the target while audio is
+demonstrably playing elsewhere.
+
+It has no fallback by design. If the endpoint is gone it says `endpoint-missing` and exits
+3 rather than measuring some other device and calling the requirement met. The full set of
+verdicts is in [`14-session-evidence.md`](14-session-evidence.md#audio-measured-during-live-play).
+
+Measured while the owner was playing, with the game untouched:
+
+| Reading | Value |
+|---|---|
+| Verdict | `verified` (exit 0) |
+| `100027813` | active, not default, peak **0.474285** |
+| Default | `Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO)`, unchanged, peak 0.524213 |
+| Mirror | running, pid 3660 |
+
+Across that session's 23 recorded samples the target never fell silent (min 0.049835,
+median 0.162346, max 0.522247) and the default device's name never changed. Persistence
+across a restart and across an episode transition is still pending: restarting the game is
+what the session cannot survive while it is being played.

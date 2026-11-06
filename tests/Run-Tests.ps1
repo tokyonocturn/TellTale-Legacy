@@ -396,6 +396,45 @@ try {
         Assert-Equal '127.0.0.1' @($status.ResolvesTo)[0].Addresses 'fixture address'
     }
 
+    Test-Case 'Offline probe round-trips a fixture hosts file byte for byte' {
+        # The offline path has to be reversible: Block then Unblock must restore the exact
+        # bytes, or "reversible compatibility" is only a claim.
+        $hostsFixture = Join-Path $script:sandbox 'hosts-roundtrip.txt'
+        $original = "# normal hosts file`r`n127.0.0.1 localhost`r`n"
+        Set-Content -LiteralPath $hostsFixture -Value $original -NoNewline
+        $before = (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash
+
+        $block = Invoke-Script -ScriptPath (Join-Path $tools 'Invoke-OfflineProbe.ps1') -ScriptArguments @(
+            '-Action', 'Block', '-HostsPath', $hostsFixture
+        )
+        Assert-Equal 0 $block.ExitCode ("block exit code: " + $block.StdErr)
+        $afterBlock = (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash
+        Assert-True ($afterBlock -ne $before) 'block must change the hosts file'
+        Assert-True ((Get-Content -LiteralPath $hostsFixture -Raw) -match '127\.0\.0\.1\s+api\.telltalegames\.com') 'block must point the domain at loopback'
+
+        $unblock = Invoke-Script -ScriptPath (Join-Path $tools 'Invoke-OfflineProbe.ps1') -ScriptArguments @(
+            '-Action', 'Unblock', '-HostsPath', $hostsFixture
+        )
+        Assert-Equal 0 $unblock.ExitCode ("unblock exit code: " + $unblock.StdErr)
+        $afterUnblock = (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash
+        Assert-Equal $before $afterUnblock 'unblock must restore the original hosts bytes'
+    }
+
+    Test-Case 'Offline probe preflight is read-only and reports blockers' {
+        $hostsFixture = Join-Path $script:sandbox 'hosts-preflight.txt'
+        Set-Content -LiteralPath $hostsFixture -Value "# normal hosts file`r`n127.0.0.1 localhost`r`n" -NoNewline
+        $before = (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Invoke-OfflineProbe.ps1') -ScriptArguments @(
+            '-Action', 'Preflight', '-HostsPath', $hostsFixture
+        )
+        Assert-Equal 0 $result.ExitCode ("preflight exit code: " + $result.StdErr)
+        $report = ($result.StdOut | Out-String) | ConvertFrom-Json
+        Assert-Equal 'Preflight' $report.Action 'preflight must identify itself'
+        Assert-Equal $false $report.CurrentlyBlocked 'fixture is not blocked'
+        Assert-True ($report.HostsSha256 -eq $before) 'preflight must hash the hosts file it reports'
+        Assert-Equal $before (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash 'preflight must not modify hosts'
+    }
+
     Test-Case 'Offline probe reports an unblocked fixture as clean' {
         $hostsFixture = Join-Path $script:sandbox 'hosts-clean.txt'
         Set-Content -LiteralPath $hostsFixture -Value "# normal hosts file`r`n127.0.0.1 localhost"
@@ -675,6 +714,76 @@ try {
         )
         $matched = @(Find-MatchingItem -Names $names -Pattern '100027813')
         Assert-Equal 2 $matched.Count 'both duplicates must be reported, never one silently chosen'
+    }
+
+    Test-Case 'Backup verification proves a restore reproduces identical bytes' {
+        $fixtureRoot = Join-Path $script:sandbox 'fixture-saves'
+        $saveDir = Join-Path $fixtureRoot 'The Walking Dead'
+        New-Item -ItemType Directory -Path $saveDir -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $saveDir 'save_1.save') -Value 'save-one-bytes' -NoNewline
+        Set-Content -LiteralPath (Join-Path $saveDir 'prefs.prop') -Value 'prefs-bytes' -NoNewline
+
+        $backupDir = Join-Path $script:sandbox 'fixture-backup'
+        $backupSaves = Join-Path $backupDir 'saves\The Walking Dead'
+        New-Item -ItemType Directory -Path $backupSaves -Force | Out-Null
+        $entries = @()
+        foreach ($name in @('save_1.save', 'prefs.prop')) {
+            $source = Join-Path $saveDir $name
+            $copy = Join-Path $backupSaves $name
+            Copy-Item -LiteralPath $source -Destination $copy -Force
+            $entries += [pscustomobject]@{
+                RelativePath = "The Walking Dead\$name"
+                SizeBytes    = (Get-Item -LiteralPath $copy).Length
+                Sha256       = (Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash
+                LastWriteUtc = (Get-Item -LiteralPath $copy).LastWriteTimeUtc.ToString('u')
+            }
+        }
+        $manifest = [pscustomobject]@{
+            SchemaVersion = 1
+            CreatedUtc    = (Get-Date).ToUniversalTime().ToString('o')
+            Label         = 'fixture'
+            SourceRoot    = $fixtureRoot
+            FileCount     = $entries.Count
+            TotalBytes    = ($entries | Measure-Object -Property SizeBytes -Sum).Sum
+            Files         = $entries
+        }
+        Set-Content -LiteralPath (Join-Path $backupDir 'manifest.json') -Value ($manifest | ConvertTo-Json -Depth 5) -Encoding UTF8
+
+        $restoreDir = Join-Path $script:sandbox 'fixture-restore'
+        $good = Invoke-Script -ScriptPath (Join-Path $tools 'Test-BackupIntegrity.ps1') -ScriptArguments @(
+            '-BackupPath', $backupDir, '-MaterializeTo', $restoreDir
+        )
+        Assert-Equal 0 $good.ExitCode ("integrity exit code: " + $good.StdErr)
+        $report = ($good.StdOut | Out-String) | ConvertFrom-Json
+        Assert-Equal 'verified' $report.Verdict 'clean backup must verify'
+        Assert-True $report.RestoreProof 'materialized restore must match the manifest'
+        Assert-Equal 2 $report.Materialized 'every file must be materialized'
+
+        # A restore is only proven if a changed byte is caught.
+        $tampered = Join-Path $restoreDir 'The Walking Dead\save_1.save'
+        Set-Content -LiteralPath $tampered -Value 'save-one-byteZ' -NoNewline
+        $bad = Invoke-Script -ScriptPath (Join-Path $tools 'Test-BackupIntegrity.ps1') -ScriptArguments @(
+            '-BackupPath', $backupDir, '-MaterializeTo', (Join-Path $script:sandbox 'fixture-restore-2')
+        )
+        Assert-Equal 0 $bad.ExitCode 'restore proof must be repeatable after tampering with the previous copy'
+
+        $corrupt = Join-Path $backupSaves 'prefs.prop'
+        $bytes = [System.IO.File]::ReadAllBytes($corrupt)
+        $bytes[0] = $bytes[0] -bxor 0xFF
+        [System.IO.File]::WriteAllBytes($corrupt, $bytes)
+        $detected = Invoke-Script -ScriptPath (Join-Path $tools 'Test-BackupIntegrity.ps1') -ScriptArguments @('-BackupPath', $backupDir)
+        Assert-Equal 10 $detected.ExitCode 'a modified backup file must fail verification'
+        Assert-True (($detected.StdOut | Out-String) -match 'hash-mismatch') 'the failure must name the mismatched file'
+    }
+
+    Test-Case 'Audio delivery assertion refuses a missing endpoint instead of falling back' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Assert-AudioDelivery.ps1') -ScriptArguments @(
+            '-EndpointId', '{0.0.0.00000000}.{00000000-0000-0000-0000-000000000000}', '-Samples', '1'
+        )
+        Assert-Equal 3 $result.ExitCode 'a missing endpoint must be a hard failure'
+        $report = ($result.StdOut | Out-String)
+        Assert-True ($report -match 'endpoint-missing') 'the verdict must name the failure'
+        Assert-True ($report -match 'no fallback') 'the report must state that no fallback was used'
     }
 
     Test-Case 'Mirror refuses a source endpoint that does not exist' {

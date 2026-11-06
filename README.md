@@ -27,6 +27,7 @@ launcher, a crack, or a content distribution project.
 | Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
 | Milestone 3 | **blocked** — offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
 | Playthrough (automated) | **in progress** — the input driver was delivering almost nothing: captured coordinates were 26 px low (window vs client) and presses without a preceding mouse-move event were discarded by the engine. Both are fixed; the save now loads through the real frontend and Lee walks, the camera follows and the mouse pans. Still at Episode 1 “Chapter 2: In The Yard”, with the remaining route documented |
+| Audio verification | **re-checkable** — `tools/Assert-AudioDelivery.ps1` resolves the endpoint by device id, refuses any fallback, and returns a named verdict with a distinct exit code (`endpoint-missing`, `endpoint-inactive`, `no-signal-on-target`, `default-changed`, `mirror-not-running`). Verified during live play at 0.474 peak with the default unchanged |
 | Audio | **routed and measured** — silence was the game's own `VOICE/MUSIC/SOUND` all at 0 (now 10/10/10); the endpoint renders (direct WASAPI tone meters 0.5) but Windows ignores per-app redirection, so a loopback mirror carries the stream to `100027813`: target peaks 0.14–0.77 during dialogue and cinematics while headphones stay at their unrelated floor, across a restart and a chapter change. Default device unchanged |
 
 Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
@@ -41,7 +42,8 @@ Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [episode transition](docs/rea/10-episode-transition.md),
 [audio routing](docs/rea/11-audio-routing.md),
 [gameplay automation](docs/rea/12-gameplay-automation.md),
-[audio delivery](docs/rea/13-audio-delivery.md).
+[audio delivery](docs/rea/13-audio-delivery.md),
+[session evidence](docs/rea/14-session-evidence.md).
 
 ## What was actually verified
 
