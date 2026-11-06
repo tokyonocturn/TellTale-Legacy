@@ -106,3 +106,14 @@ Block applied throughout: both domains → `127.0.0.1`, hosts hash
 - The one runtime failure is the Episode 2 opening stalling under this harness. Per the
   owner's diagnosis it needs **human input at the controls**; the synthetic events do not
   move it. Either way it is input-side, not network-side.
+
+---
+
+## Update — the offline launch wait (2026-11-06, same day)
+
+| Feature | Status | Evidence |
+|---|---|---|
+| **Offline launch wait (the 60–90 s before play)** | **VERIFIED fixed** | with the client's and game's outbound traffic cut, Steam online never launched the game in 220 s; the same cut-off with Steam in Offline Mode reached a usable frontend at **11.63 s** (title 1.37 / menu 4.37 / slot 8.02 / episode page 11.63) — `19-offline-launch-stall.md` |
+| Publisher endpoints as the cause of that wait | **REFUTED** | pinned to `127.0.0.1` → 19.93 s; unroutable `10.255.255.1` → 11.82 s; both fine, so the wait is client-side |
+| Offline launch patch is byte-reversibly removable | **VERIFIED** | `tests/Run-Tests.ps1`: hosts patch restores byte-identically and refuses when the file changed after install; Steam patch restores `loginusers.vdf` to its original hash |
+| Truly disconnected host (no adapter) | **UNTESTED** | reproduction used scoped firewall rules; pulling the machine's network was not done unilaterally |

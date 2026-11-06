@@ -833,6 +833,121 @@ try {
         try { [void](Get-GameVirtualKey -Name 'HYPER') } catch { $threw = $true }
         Assert-True $threw 'an unknown key name must throw'
     }
+
+    Write-Host ''
+    Write-Host 'Offline launch patch'
+
+    $hostsFixture = Join-Path $script:sandbox 'hosts-fixture'
+    $hostsManifest = Join-Path $script:sandbox 'patch-manifest.json'
+    Set-Content -LiteralPath $hostsFixture -Value "# fixture hosts`r`n127.0.0.1 localhost`r`n" -NoNewline
+    $hostsOriginalHash = (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash
+
+    Test-Case 'Hosts patch pins both publisher endpoints' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Set-OfflineLaunchPatch.ps1') -ScriptArguments @(
+            '-Action', 'Install', '-HostsPath', $hostsFixture, '-ManifestPath', $hostsManifest,
+            '-SkipDnsFlush', '-SkipResolveCheck', '-SkipElevationCheck'
+        )
+        Assert-Equal 0 $result.ExitCode ('install must succeed: ' + $result.StdOut)
+        $text = Get-Content -LiteralPath $hostsFixture -Raw
+        Assert-True ($text -match '127\.0\.0\.1\s+api\.telltalegames\.com') 'api.telltalegames.com must be pinned'
+        Assert-True ($text -match '127\.0\.0\.1\s+meta\.telltalegames\.com') 'meta.telltalegames.com must be pinned'
+        Assert-True ($text -match '127\.0\.0\.1 localhost') 'the existing hosts content must survive'
+    }
+
+    Test-Case 'Hosts patch removal restores the file byte-for-byte' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Set-OfflineLaunchPatch.ps1') -ScriptArguments @(
+            '-Action', 'Remove', '-HostsPath', $hostsFixture, '-ManifestPath', $hostsManifest,
+            '-SkipDnsFlush', '-SkipElevationCheck'
+        )
+        Assert-Equal 0 $result.ExitCode ('remove must succeed: ' + $result.StdOut)
+        $restored = (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash
+        Assert-Equal $hostsOriginalHash $restored 'the hosts file must be byte-identical to its pre-patch state'
+    }
+
+    Test-Case 'Hosts patch removal without a record refuses instead of guessing' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Set-OfflineLaunchPatch.ps1') -ScriptArguments @(
+            '-Action', 'Remove', '-HostsPath', $hostsFixture,
+            '-ManifestPath', (Join-Path $script:sandbox 'no-such-manifest.json'),
+            '-SkipDnsFlush', '-SkipElevationCheck'
+        )
+        Assert-Equal 22 $result.ExitCode 'removal without a recorded original must fail'
+    }
+
+    Test-Case 'Hosts patch removal refuses when the file changed after install' {
+        $editedHosts = Join-Path $script:sandbox 'hosts-edited'
+        Copy-Item -LiteralPath $hostsFixture -Destination $editedHosts -Force
+        $editedManifest = Join-Path $script:sandbox 'edited-manifest.json'
+        $install = Invoke-Script -ScriptPath (Join-Path $tools 'Set-OfflineLaunchPatch.ps1') -ScriptArguments @(
+            '-Action', 'Install', '-HostsPath', $editedHosts, '-ManifestPath', $editedManifest,
+            '-SkipDnsFlush', '-SkipResolveCheck', '-SkipElevationCheck'
+        )
+        Assert-Equal 0 $install.ExitCode 'install must succeed'
+        # Change a byte inside the recorded pre-patch prefix, which is what "someone edited
+        # this file" looks like and must never be truncated away.
+        [System.IO.File]::WriteAllText($editedHosts, ([System.IO.File]::ReadAllText($editedHosts) -replace 'localhost', 'localhost-renamed'))
+        $remove = Invoke-Script -ScriptPath (Join-Path $tools 'Set-OfflineLaunchPatch.ps1') -ScriptArguments @(
+            '-Action', 'Remove', '-HostsPath', $editedHosts, '-ManifestPath', $editedManifest,
+            '-SkipDnsFlush', '-SkipElevationCheck'
+        )
+        Assert-Equal 21 $remove.ExitCode 'a changed hosts file must not be silently truncated'
+    }
+
+    Write-Host ''
+    Write-Host 'Steam offline mode patch'
+
+    $vdfFixture = Join-Path $script:sandbox 'loginusers.vdf'
+    $vdfBackup = Join-Path $script:sandbox 'loginusers-original.vdf'
+    $vdfText = @(
+        '"users"',
+        '{',
+        '    "76561199229229392"',
+        '    {',
+        '        "AccountName"        "tester"',
+        '        "WantsOfflineMode"        "0"',
+        '        "SkipOfflineModeWarning"        "0"',
+        '        "AutoLogin"        "1"',
+        '    }',
+        '}'
+    ) -join "`r`n"
+    Set-Content -LiteralPath $vdfFixture -Value $vdfText -NoNewline
+    $vdfOriginalHash = (Get-FileHash -LiteralPath $vdfFixture -Algorithm SHA256).Hash
+
+    Test-Case 'Steam offline patch sets both offline-mode values' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Set-SteamOfflineMode.ps1') -ScriptArguments @(
+            '-Action', 'Enable', '-VdfPath', $vdfFixture, '-BackupPath', $vdfBackup, '-SkipRestart'
+        )
+        Assert-Equal 0 $result.ExitCode ('enable must succeed: ' + $result.StdOut)
+        $text = Get-Content -LiteralPath $vdfFixture -Raw
+        Assert-True ($text -match '"WantsOfflineMode"\s+"1"') 'WantsOfflineMode must be 1'
+        Assert-True ($text -match '"SkipOfflineModeWarning"\s+"1"') 'SkipOfflineModeWarning must be 1'
+        Assert-True ($text -match '"AccountName"        "tester"') 'the rest of the file must be untouched'
+    }
+
+    Test-Case 'Steam offline status reports the flag state' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Set-SteamOfflineMode.ps1') -ScriptArguments @(
+            '-Action', 'Status', '-VdfPath', $vdfFixture, '-BackupPath', $vdfBackup
+        )
+        Assert-Equal 0 $result.ExitCode 'status must succeed'
+        Assert-True ($result.StdOut -match 'OfflineModeEnabled\s*:\s*True') 'status must report offline mode enabled'
+    }
+
+    Test-Case 'Steam offline patch reverts byte-for-byte' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Set-SteamOfflineMode.ps1') -ScriptArguments @(
+            '-Action', 'Disable', '-VdfPath', $vdfFixture, '-BackupPath', $vdfBackup, '-SkipRestart'
+        )
+        Assert-Equal 0 $result.ExitCode ('disable must succeed: ' + $result.StdOut)
+        $restored = (Get-FileHash -LiteralPath $vdfFixture -Algorithm SHA256).Hash
+        Assert-Equal $vdfOriginalHash $restored 'loginusers.vdf must be byte-identical to its pre-patch state'
+    }
+
+    Test-Case 'Steam offline patch refuses a file with no offline-mode values' {
+        $bareVdf = Join-Path $script:sandbox 'bare-loginusers.vdf'
+        Set-Content -LiteralPath $bareVdf -Value '"users"`r`n{`r`n}`r`n' -NoNewline
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Set-SteamOfflineMode.ps1') -ScriptArguments @(
+            '-Action', 'Enable', '-VdfPath', $bareVdf, '-BackupPath', (Join-Path $script:sandbox 'bare-backup.vdf'), '-SkipRestart'
+        )
+        Assert-Equal 20 $result.ExitCode 'a file without the values must be refused'
+    }
 }
 finally {
     if (Test-Path -LiteralPath $script:sandbox) {

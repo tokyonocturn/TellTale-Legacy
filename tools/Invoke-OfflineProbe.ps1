@@ -23,7 +23,8 @@
     resolve, and what network connections the running game holds.
 
 .PARAMETER Domains
-    Domains to block. Defaults to the endpoints observed in REA session logs.
+    Domains to block. Defaults to every publisher endpoint the REA map names:
+    api.telltalegames.com and meta.telltalegames.com.
 
 .EXAMPLE
     .\Invoke-OfflineProbe.ps1 -Action Block
@@ -33,7 +34,7 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Block', 'Unblock', 'Status', 'Preflight')][string]$Action = 'Status',
-    [string[]]$Domains = @('api.telltalegames.com'),
+    [string[]]$Domains = @('api.telltalegames.com', 'meta.telltalegames.com'),
     [string]$HostsPath = ''
 )
 
