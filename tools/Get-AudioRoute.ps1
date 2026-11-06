@@ -237,16 +237,18 @@ if ($AsJson -or $OutputPath) {
         $dir = Split-Path -Parent $full
         if ($dir -and -not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
         $json | Set-Content -LiteralPath $full -Encoding UTF8
-        Write-Host ("Report: {0}" -f $full)
+        if (-not $AsJson) { Write-Host ("Report: {0}" -f $full) }
     }
     if ($AsJson) { $json }
 } else {
     $rows | Select-Object Name, State, Default, PeakMax | Format-Table -AutoSize
 }
 
-Write-Host ("Target '{0}': {1} match(es), {2} active" -f $TargetName, $target.Count, $targetActive.Count)
-foreach ($match in $targetActive) {
-    Write-Host ("  active: {0}  peakMax={1}  id={2}" -f $match.Name, $match.PeakMax, $match.Id)
+if (-not $AsJson) {
+    Write-Host ("Target '{0}': {1} match(es), {2} active" -f $TargetName, $target.Count, $targetActive.Count)
+    foreach ($match in $targetActive) {
+        Write-Host ("  active: {0}  peakMax={1}  id={2}" -f $match.Name, $match.PeakMax, $match.Id)
+    }
 }
 
 if ($targetActive.Count -eq 0) {

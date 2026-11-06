@@ -1,125 +1,151 @@
 # 11 — Audio endpoint `100027813`
 
-Status: **endpoint identified and instrumented; routing not applied; in-game audio
-not verified.** The game's audio has not been shown to reach the target device, and
-this document does not claim it has.
+Status: **endpoint identified, verification instrumented, routing not applied, and
+game audio could not be measured at all.** The game emitted no audio in any state
+reachable in this session (see *Why nothing could be measured*), so the routing
+requirement is unresolved rather than satisfied. Nothing here claims otherwise.
 
 ## What `100027813` actually is
 
-`100027813` is a **display name**, not an endpoint identifier. The endpoint is an
-NVIDIA HDMI audio output:
+`100027813` is a **display name**, not an endpoint identifier. It belongs to an
+NVIDIA HDMI audio output, and four enumerated devices carry that name:
+
+| Endpoint id | State | Outcome |
+|---|---|---|
+| `{0.0.0.00000000}.{63b45a0d-a22d-42a4-a438-b64a52829507}` | `DeviceState = 1` | **live — this is the target** |
+| `{0.0.0.00000000}.{825aafdd-89f4-42e0-b1dd-dc80ce2d628c}` | `0x20000004` | not present (stale) |
+| `{0.0.0.00000000}.{a17e01de-ea23-41fe-b932-fabccfab6dba}` | `0x20000004` | not present (stale) |
+| `{0.0.0.00000000}.{3c032cf1-7069-4bf3-8a04-c112b815c626}` | `0x20000004` | not present (stale) |
+
+Target details:
 
 | Field | Value |
 |---|---|
 | Friendly name | `100027813 (NVIDIA High Definition Audio)` |
-| Endpoint id | `{0.0.0.00000000}.{63b45a0d-a22d-42a4-a438-b64a52829507}` |
 | PnP instance | `SWD\MMDEVAPI\{0.0.0.00000000}.{63B45A0D-A22D-42A4-A438-B64A52829507}` |
-| State | active (`DeviceState = 1`) |
 | Render default | **no** |
-| Device interface path | `{2}.\\?\hdaudio#func_01&ven_10de&dev_009f&subsys_104388a8&rev_1001#5&2b74da90&0&0001#{6994ad04-93ef-11d0-a3cc-00a0c9223196}\topo00` |
+| Device interface | `{2}.\\?\hdaudio#func_01&ven_10de&dev_009f&subsys_104388a8&rev_1001#5&2b74da90&0&0001#{6994ad04-93ef-11d0-a3cc-00a0c9223196}\topo00` |
 
-**The name is ambiguous, which matters.** Four enumerated devices carry the string
-`100027813`; three are not present (`DeviceState = 0x20000004`) and only
-`{63b45a0d-…}` is active. Selecting by name alone could bind to a stale endpoint, so
-the tool resolves the name and then reports the id, state and count of matches
-rather than picking silently.
+Because the name is shared, resolving by name alone can bind to a stale endpoint.
+`tools/Get-AudioRoute.ps1` reports every match plus its state and id, and fails
+(exit 2) when none is active, instead of silently choosing.
 
-The endpoint is an **HDMI** output. Audio can only be heard from it if the attached
-sink is powered and selected; HDMI outputs routinely stay "active" while producing
-no sound.
+## Instrumentation built
 
-## Current audio topology (observed)
+| Tool | What it measures |
+|---|---|
+| `tools/Get-AudioRoute.ps1` | render endpoints: name, id, state, default flag, peak meter |
+| `tools/Get-AudioSession.ps1` | audio sessions per endpoint: owning **process id**, state, peak, master volume, mute |
 
-- Render default: `Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO)`.
-- The machine runs Voicemeeter with a large per-app routing setup: **700 entries**
-  under `HKCU\…\Audio\PolicyConfig\PropertyStore`, each pinning one executable to
-  a Voicemeeter bus or an HDMI output.
-- A 1 s test tone played through the default reached
-  `Voicemeeter AUX Input` (peak 0.377) and `Headphones (3- E7 Stereo)` (peak 0.382)
-  and **not** `100027813` (peak 0).
+Session enumeration is the important one: endpoint peaks only say *something* played,
+while a session names the process. That is how "the game's audio reached device X"
+becomes a measurement rather than an inference.
 
-This is why routing the game must be per-application: changing the system default
-would reconfigure the user's audio for every other program, which the brief
-explicitly forbids.
+## Why nothing could be measured
 
-## Verification instrument
+The game was launched normally (Steam, DRM intact), reached the splash, the main
+menu, `EPISODE STATUS`, and the `PLAY → slot list` screen. At every point:
 
-`tools/Get-AudioRoute.ps1` enumerates render endpoints through Core Audio, resolves
-the target by name, and samples each endpoint's peak meter. Because peaks are per
-device, "target peak > 0 while the others stay flat" is direct evidence that audio
-reached `100027813` — no guessing from settings.
+- `WalkingDead101` held an **active** session on `Voicemeeter AUX Input` (the
+  default) with **peak 0.000000**, volume 1.0, not muted.
+- The same zero held with the game window verified as foreground for 18 s
+  (`tools/scratch/measure_focus.ps1`), so it is not a focus-pause artefact.
+- During launch cinematics it was also 0.
+- The only audio on the machine was other applications (a browser at ~0.07, other
+  media at ~0.55 on the default), which the session list clearly attributed to
+  other PIDs.
+
+The cause is visible in the game's own settings — **Audio Settings**:
+
+```
+VOICE  10
+MUSIC  10
+SOUND   0     <-- sound effects muted by the game's configuration
+```
+
+`SOUND = 0` silences UI effects. The menu also carries no music, so the only audio
+left is in gameplay, which could not be entered: the slot-list `PLAY` button did not
+accept synthesised input (SendInput with confirmed foreground, repeated clicks,
+`Enter`), even though the same mechanism successfully drove the splash, the menu,
+`EPISODE STATUS` and row selection. Without entering gameplay there is no audio to
+route or to measure.
+
+Changing the user's in-game audio settings or forcing a save load is a user decision,
+not something to do unilaterally while hunting for a measurement.
+
+## Routes attempted for per-app routing
+
+### 1. Synthetic Windows policy entry — ignored
+
+The value format was recovered from the machine's own 700 entries and written for a
+test process exactly as Windows stores it (device string taken from the endpoint's
+`{b3f8fa53-…},11` property, executable path resolved to `\Device\HarddiskVolume4\…`).
+Windows ignored it: the same tone stayed on the default, target peak 0. The key is a
+hash that was not recovered (700 samples, 10 algorithms, 6 path/encoding variants,
+zero matches), so entries cannot be synthesised. Test key deleted.
+
+### 2. `IAudioPolicyConfigFactory` — available, declined
+
+`Windows.Media.Internal.AudioPolicyConfig` activates; the Windows 10 interface
+`{2A59116D-…}` is supported and the Windows 11 GUID returns `E_NOINTERFACE`. It was
+not called: the vtable order is undocumented and a mis-indexed call lands on
+`ClearAllPersistedApplicationDefaultEndpoints`, which would wipe all 700 mappings.
+
+### 3. Settings UI Automation — not attempted
+
+It would change the same policy store as (2) and could not be *verified* while the
+game produces no audio, so driving the UI would have produced an unprovable change.
+
+## Machine state after the session (verified, not asserted)
+
+| Check | Baseline | After |
+|---|---|---|
+| Policy entries | 700 | **700** |
+| Policy hash (SHA-256 of sorted key=value) | `630B71A532AA250A28A8148FE157978A9145661CBEB253C6EB9F49E6A9126875` | **identical** |
+| Default render endpoint | Voicemeeter AUX Input | **Voicemeeter AUX Input** |
+| Game process | none | **none** (closed) |
+
+No routing change was left half-applied.
+
+## Manual steps (under a minute)
+
+**A. Route the game to `100027813`** (per-app, leaves the system default alone):
+
+1. Launch the game and get to a screen with sound (see B).
+2. `Win+I` → **System** → **Sound** → **App volume and device preferences**.
+3. Under *The Walking Dead*, set **Output** to `100027813 (NVIDIA High Definition Audio)`.
+   If the name appears more than once, pick the entry that stays selected after
+   reopening the page — only `{63b45a0d-…}` is present; the other three are stale
+   duplicates that Windows lists from earlier HDMI sinks.
+4. Keep the **system default** on *Voicemeeter AUX Input* (top of the same page).
+
+**B. Restore game sound effects** (currently `SOUND = 0`):
+
+1. Main menu → **SETTINGS** → **AUDIO**.
+2. Set **SOUND** to 10 (leave VOICE/MUSIC as they are), then **APPLY**.
+
+**C. Verify by measurement** (no guessing):
 
 ```powershell
-# Baseline / verification: shows every render endpoint with its peak
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-AudioRoute.ps1 -Samples 4
+# per-device peaks; the target must be above 0 while the default stops carrying the game
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-AudioRoute.ps1 -Samples 6
 
-# Machine-readable
-.\tools\Get-AudioRoute.ps1 -Samples 3 -OutputPath docs\rea\data\audio-route.json
+# per-process attribution: the game's session must appear on the target endpoint
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-AudioSession.ps1 -ProcessName WalkingDead101
 ```
 
-Exit codes: `0` target resolved with an active endpoint, `2` no active endpoint
-with that name.
+Then kill the game, relaunch, and repeat C — the mapping is stored per executable,
+but persistence across a restart still has to be *shown*, not assumed.
 
-## Automation attempts (both failed, both documented)
+## Measured vs unverified
 
-### 1. Synthetic per-application policy entry — ignored by Windows
+**Measured:** endpoint identity and the three stale duplicates; session/peak/volume
+attribution per process; the target receiving nothing (peak 0) while the default
+carries other applications; the game holding a silent active session; the game's
+audio settings (`SOUND 0`); the machine's 700-entry policy store and default device
+unchanged byte-for-byte after all attempts.
 
-The registry format used by the OS was recovered from the machine's own 700
-entries:
-
-```
-{2}.\\?\hdaudio#…#{6994ad04-…}\topo00/00010001|\Device\HarddiskVolume4\…\app.exe%b{00000000-0000-0000-0000-000000000000}
-```
-
-The device string for the target was taken from the endpoint's own property
-`{b3f8fa53-0004-438e-9003-51a46e139bfc},11` and reduced to the form Windows writes
-(the exact string used by 35 existing entries), the executable path was resolved to
-`\Device\HarddiskVolume4\…`, and the entry was written under a synthetic key.
-
-Test: the same tone, same process. It went to the default again (0.377 / 0.382),
-target still 0. **Windows ignores entries whose key name it did not derive itself.**
-The key is a hash of something not recovered: across 700 real entries and 10
-algorithm/path variants (CRC32, FNV-1a, FNV-1, MD5/SHA-1/SHA-256 truncations, over
-full/relative/bare exe paths, UTF-8 and UTF-16, three casings) there were **zero**
-matches. The test key was deleted.
-
-### 2. `IAudioPolicyConfigFactory` — available, but declined
-
-The per-app routing factory used by the Windows UI does activate on this build:
-
-```
-Windows.Media.Internal.AudioPolicyConfig
-  activate as IInspectable:            hr=0x00000000
-  QI  {2A59116D-6C4F-45E0-A74F-707E3FEF9258}:  supported (Windows 10 interface)
-  QI  {AB3D4648-E242-459F-B02F-541C70306324}:  E_NOINTERFACE (Windows 11 interface)
-```
-
-So a programmatic route exists. It was **not** used: the interface is undocumented
-and its vtable order is version-dependent. A mis-indexed call would land on
-`ClearAllPersistedApplicationDefaultEndpoints`, wiping all 700 of the user's
-mappings — while audio was in active use. Guessing offsets on a live audio session
-is not a risk worth taking for a setting the OS exposes in its own UI, so the
-attempt stops here and the exact blocker is recorded instead.
-
-## Supported route (one manual step, ~15 s)
-
-1. Play the game so it appears in the volume mixer.
-2. **Settings → System → Sound → App volume and device preferences**.
-3. Find *The Walking Dead* and set **Output → `100027813 (NVIDIA High Definition Audio)`**.
-   This writes a key the OS derives itself, so it is honoured.
-4. Confirm with `tools\Get-AudioRoute.ps1 -Samples 6` while the game is running:
-   target peak should rise above 0 and the default endpoint should stop receiving it.
-
-The mapping persists by design (it is stored per executable, not per session), but
-it must still be **demonstrated** across a game restart and an episode transition
-before it counts as verified.
-
-## Not verified
-
-- Game audio on `100027813`: **no**. Nothing has been routed yet.
-- Menu music, dialogue, music cues, sound effects and cinematics on that endpoint:
-  **none verified.**
-- Persistence across restart and episode transition: **not tested.**
-- Whether the HDMI sink is powered and audible: **unknown** — a positive peak meter
-  proves the samples reached the endpoint, not that a human heard them. Audibility
-  is an attended check.
+**Unverified:** game audio routed to `100027813`; dialogue, music, effects or
+cinematics on that endpoint; persistence across restart; persistence across an
+episode transition (no gameplay exists yet, and Episode 2 has never been entered);
+human audibility of the HDMI sink.

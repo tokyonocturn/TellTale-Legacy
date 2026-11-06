@@ -622,6 +622,37 @@ try {
             Assert-True ($active.Count -ge 1) 'expected an active endpoint entry'
         }
     }
+    Test-Case 'Session probe returns no sessions for a process that is not running' {
+        $reportPath = Join-Path $script:sandbox 'audio-sessions-none.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-AudioSession.ps1') -ScriptArguments @(
+            '-ProcessName', 'no-such-process-xyz', '-OutputPath', $reportPath
+        )
+        Assert-Equal 0 $result.ExitCode ("session probe exit code: " + $result.StdErr)
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        Assert-Equal 0 $report.Count 'no sessions expected for an absent process'
+        Assert-Equal 'no-such-process-xyz' $report.Filter 'filter should be echoed'
+    }
+
+    Test-Case 'Session probe reports process, device and volume for enumerable sessions' {
+        $reportPath = Join-Path $script:sandbox 'audio-sessions-all.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-AudioSession.ps1') -ScriptArguments @(
+            '-OutputPath', $reportPath
+        )
+        Assert-Equal 0 $result.ExitCode ("session probe exit code: " + $result.StdErr)
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        Assert-Equal 1 $report.SchemaVersion 'schemaVersion'
+        Assert-True ($null -ne $report.Sessions) 'sessions collection missing'
+        $sessions = @($report.Sessions)
+        Assert-Equal $sessions.Count $report.Count 'count should match the session list'
+        if ($sessions.Count -gt 0) {
+            $first = $sessions[0]
+            Assert-True ($first.PSObject.Properties.Name -contains 'ProcessId') 'missing ProcessId'
+            Assert-True ($first.PSObject.Properties.Name -contains 'Device') 'missing Device'
+            Assert-True ($first.PSObject.Properties.Name -contains 'Peak') 'missing Peak'
+            Assert-True ($first.PSObject.Properties.Name -contains 'Volume') 'missing Volume'
+            Assert-True ($first.Peak -ge 0 -and $first.Peak -le 1) 'peak out of range'
+        }
+    }
 }
 finally {
     if (Test-Path -LiteralPath $script:sandbox) {
