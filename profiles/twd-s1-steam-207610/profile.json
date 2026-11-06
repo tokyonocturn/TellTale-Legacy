@@ -305,5 +305,48 @@
         "conclusion": "The per-app override is stored by the page but not applied by the audio stack on this machine. Routing to 100027813 is not achievable through this route."
       }
     ]
+  },
+  "gameplayAutomation": {
+    "documentation": "docs/rea/12-gameplay-automation.md",
+    "tool": "tools/Invoke-GameInput.ps1",
+    "captureMethod": "PrintWindow with PW_RENDERFULLCONTENT; screen capture rejected because other desktop windows can overlap the game",
+    "controlsEstablished": {
+      "walk": "click and hold on walkable ground - measured as a 24.4 mean-grey frame delta",
+      "look": "move pointer - camera turns",
+      "interact": "click",
+      "pauseMenu": "Esc - proves synthetic keys reach the game",
+      "wasd": "no movement in free roam; frame delta 0.1-0.5, identical to sending nothing"
+    },
+    "reached": {
+      "slot": "Game 1",
+      "episode": "Episode 1: A New Day",
+      "chapter": "Chapter 2: In The Yard",
+      "chapterReplayedFromStart": true,
+      "storyProgressBeyondChapterOpening": false
+    },
+    "stoppedAt": "Static shot of Lee in the yard after the chapter opening cinematic; about five minutes of walking, clicking, camera sweeps and key presses produced no state change, and Esc -> RESUME returned to the identical shot.",
+    "openReadings": [
+      "a hotspot that was not found (cursor and hotspot highlight are absent from captured frames)",
+      "a chapter that cannot advance on this machine (the game audio session stayed active with peak 0 and no dialogue audio or subtitles appeared)"
+    ],
+    "notClaimed": [
+      "episode completion",
+      "any dialogue decision or its consequence",
+      "the Episode 2 transition",
+      "anything about Episodes 2-5 or 400 Days"
+    ],
+    "machineStateAfterRun": {
+      "policyEntries": 700,
+      "policyPerValueDiff": "0 changed, 0 added, 0 removed",
+      "defaultEndpoint": "Voicemeeter AUX Input (unchanged)",
+      "targetEndpointPeak": 0,
+      "gameExitedCleanly": true,
+      "savesTouched": [
+        "save_2.save",
+        "save_3.save",
+        "prefs.prop"
+      ],
+      "preRunBackup": "backups/20261106-014855-episode-run-1"
+    }
   }
 }

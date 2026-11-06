@@ -676,6 +676,22 @@ try {
         $matched = @(Find-MatchingItem -Names $names -Pattern '100027813')
         Assert-Equal 2 $matched.Count 'both duplicates must be reported, never one silently chosen'
     }
+
+    Test-Case 'Input driver maps play keys to virtual-key codes' {
+        . (Join-Path $tools 'Invoke-GameInput.ps1')
+        Assert-Equal 0x57 (Get-GameVirtualKey -Name 'w') 'W should be 0x57'
+        Assert-Equal 0x31 (Get-GameVirtualKey -Name '1') 'digit 1 should be 0x31'
+        Assert-Equal 0x0D (Get-GameVirtualKey -Name 'enter') 'ENTER should be 0x0D'
+        Assert-Equal 0x1B (Get-GameVirtualKey -Name 'Esc') 'ESC should be 0x1B'
+        Assert-Equal 0x20 (Get-GameVirtualKey -Name 'SPACE') 'SPACE should be 0x20'
+    }
+
+    Test-Case 'Input driver refuses unknown keys instead of sending a wrong one' {
+        . (Join-Path $tools 'Invoke-GameInput.ps1')
+        $threw = $false
+        try { [void](Get-GameVirtualKey -Name 'HYPER') } catch { $threw = $true }
+        Assert-True $threw 'an unknown key name must throw'
+    }
 }
 finally {
     if (Test-Path -LiteralPath $script:sandbox) {

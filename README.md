@@ -26,6 +26,7 @@ launcher, a crack, or a content distribution project.
 | Milestone 1 | **complete** — inventory, profile, offline startup verified, backup/restore verified |
 | Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
 | Milestone 3 | **blocked** — offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
+| Playthrough (automated) | **in progress, stopped** — real input drives the game (click-and-hold walks, Esc menus, synthetic WASD does not move Lee); reached Episode 1 “Chapter 2: In The Yard” and replayed it from the chapter start, no story progress beyond its opening shot |
 | Audio | **identified, not routed** — `100027813` resolved to `{63b45a0d-…}` (three stale same-named endpoints rejected); game audio measured on the default endpoint after raising the silent `SOUND 0`, but Windows accepts and then ignores the per-app override, measured against a control process |
 
 Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
@@ -36,7 +37,10 @@ Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [preservation requirements](docs/rea/06-preservation-requirements.md),
 [save container and slots](docs/rea/07-save-and-slot-format.md),
 [offline gameplay verification](docs/rea/08-offline-gameplay-verification.md),
-[400 Days and achievements](docs/rea/09-400-days-and-achievements.md).
+[400 Days and achievements](docs/rea/09-400-days-and-achievements.md),
+[episode transition](docs/rea/10-episode-transition.md),
+[audio routing](docs/rea/11-audio-routing.md),
+[gameplay automation](docs/rea/12-gameplay-automation.md).
 
 ## What was actually verified
 
@@ -64,6 +68,11 @@ Not claims — measured on the installed build, with logs:
   [docs/rea/08-offline-gameplay-verification.md](docs/rea/08-offline-gameplay-verification.md).
 * **Episode content is verified present, not assumed.** All five packs exist with
   27/25/21/22/17 archives (`tools/Test-ContentPacks.ps1`).
+* **The game is drivable with real input, and its controls were measured, not
+  assumed.** Click-and-hold on the ground walks Lee; `Esc` opens the pause menu;
+  synthetic WASD moves nothing. Menus, slot selection, chapter select and rewind
+  were all driven this way. See
+  [docs/rea/12-gameplay-automation.md](docs/rea/12-gameplay-automation.md).
 * **The save container is opaque.** Magic `bbdeaf64`, a 56-byte header, then a
   per-file keystream: entropy 7.99, incompressible, no repeating key out to 4,096,
   XOR of two saves yields noise. No chapter or choice identifier is readable, so
