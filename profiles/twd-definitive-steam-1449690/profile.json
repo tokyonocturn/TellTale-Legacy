@@ -96,19 +96,38 @@
       "services.telltalegames.com"
     ],
     "steamOfflineModeRequired": true,
-    "launchVerification": "UNTESTED",
+    "launchVerification": "VERIFIED",
+    "launchMeasurement": {
+      "measuredUtc": "2026-11-06",
+      "conditions": "patch installed (WantsOfflineMode 1, SkipOfflineModeWarning 1, services.telltalegames.com pinned to 127.0.0.1) with Steam's Offline Mode active and outbound blocked for steam.exe, steamwebhelper.exe and WDC.exe",
+      "clock": "starts when steam://rungameid/1449690 is handed to Steam",
+      "samples": "frame sequence at about 1.6 s intervals; screens identified by their own signatures, not by click differences",
+      "processPresentSeconds": 1.39,
+      "titleScreenSeconds": 10.48,
+      "mainMenuSeconds": 18.54,
+      "menuAcceptedInput": true,
+      "menuAcceptanceEvidence": "a click on Season Select opened the season chooser carousel with a PLAY button",
+      "usableDefinition": "the collection's main menu is rendered and accepts a click, which is where a season is chosen and played",
+      "unpatchedComparison": "Not measured on this build. The no-patch comparison exists for Season 1 only: doc 19 condition C, no game process in 220 s under the same cut-off.",
+      "documentation": "docs/rea/21-definitive-offline-launch.md"
+    },
     "verified": [
       "the installed executable matches the sha256 this patch is written for, so the patch applies to this build only",
       "the publisher endpoint was located as a string literal in the shipped WDC.exe",
-      "installing and removing the endpoint pin is byte-reversible: the same mechanics are covered for the shared tool by tests/Run-Tests.ps1, including the two-game merge and the last-removal restore"
+      "installing and removing the endpoint pin is byte-reversible: the same mechanics are covered for the shared tool by tests/Run-Tests.ps1, including the two-game merge and the last-removal restore",
+      "an offline launch with the patch installed reached the main menu at 18.54 s and that menu accepted a click that opened the season chooser"
     ],
     "untested": [
-      "the offline launch wait on this build: no launch was timed under a network cut-off",
+      "the same run without the patch on this build: the unpatched cut-off measurement exists for Season 1 only",
+      "a machine with no network adapter at all; the cut-off used scoped firewall rules",
       "whether the launcher's own season selector needs anything beyond services.telltalegames.com",
-      "the sign-in sentence recorded above, and whether it can appear offline",
+      "the sign-in sentence recorded above: no prompt appeared during the measured launch, but the string is still in the binary",
       "gameplay, saves and achievements offline on this build"
     ],
-    "crossReference": "The launch fix itself is Steam's own Offline Mode switch, measured on Season 1 in docs/rea/19-offline-launch-stall.md (condition D: usable frontend at 11.63 s with the client and game cut off, against no launch in 220 s without it). It is a client-wide setting, not a per-game one.",
-    "documentation": "docs/rea/20-other-games-offline-patch.md"
+    "crossReference": "The launch fix itself is Steam's own Offline Mode switch, first measured on Season 1 in docs/rea/19-offline-launch-stall.md (condition D: usable frontend at 11.63 s with the client and game cut off, against no launch in 220 s without it). It is a client-wide setting, not a per-game one.",
+    "documentation": [
+      "docs/rea/20-other-games-offline-patch.md",
+      "docs/rea/21-definitive-offline-launch.md"
+    ]
   }
 }

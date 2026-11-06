@@ -34,8 +34,25 @@
 .PARAMETER KeepRunning
     Leave the game running at the episode page when the measurement ends.
 
+.PARAMETER ProcessName
+    Image name of the game process, without extension. Defaults to WalkingDead101.
+
+.PARAMETER SteamAppId
+    App id handed to Steam's rungameid handler. Defaults to 207610.
+
+.PARAMETER Steps
+    Optional click path, one entry per step, as name:xFraction,yFraction, separated by
+    semicolons when the script is called with -File. Fractions are of the live client area,
+    which matters for builds whose frontend changes resolution during startup. When omitted,
+    the measured Season 1 points at 1920x1071 are used.
+
 .EXAMPLE
     .\tools\Measure-LaunchLatency.ps1 -Label offline-no-patch -TimeoutSeconds 200
+
+.EXAMPLE
+    # The Definitive Series: its menu chain differs from Season 1, and it resizes the window
+    .\tools\Measure-LaunchLatency.ps1 -Label definitive-patched -ProcessName WDC `
+        -SteamAppId 1449690 -Steps 'title-begin:0.5,0.856;menu-season-select:0.132,0.220'
 
 .OUTPUTS
     0 measured; 20 the game was already running; 21 the window never appeared.
@@ -47,6 +64,9 @@ param(
     [string]$OutputDirectory = '',
     [double]$ChangeThreshold = 6.0,
     [switch]$KeepRunning,
+    [string]$ProcessName = 'WalkingDead101',
+    [string]$SteamAppId = '207610',
+    [string[]]$Steps = @(),
     [string]$HostsPath = (Join-Path $env:SystemRoot 'System32\drivers\etc\hosts'),
     [string]$PythonPath = 'python'
 )
@@ -57,13 +77,51 @@ $inputTool = Join-Path $PSScriptRoot 'Invoke-GameInput.ps1'
 $classifier = Join-Path $PSScriptRoot 'classify_frame.py'
 
 # Measured click points (1920x1071 client). See docs/rea/12 and docs/rea/18.
-$steps = @(
+$clickSteps = @(
     [pscustomobject]@{ Name = 'title-continue'; Point = @(960, 640) },
     [pscustomobject]@{ Name = 'main-menu-play'; Point = @(500, 338) },
     [pscustomobject]@{ Name = 'slot-row'; Point = @(900, 346) },
     [pscustomobject]@{ Name = 'slot-play'; Point = @(1587, 962) }
 )
 $exitPoint = @(531, 640)
+$stepSpecs = @()
+foreach ($entry in $Steps) { $stepSpecs += ($entry -split ';') }
+$stepSpecs = @($stepSpecs | Where-Object { $_ -ne '' })
+$relativeSteps = $stepSpecs.Count -gt 0
+if ($relativeSteps) {
+    $clickSteps = @()
+    foreach ($spec in $stepSpecs) {
+        $parts = $spec.Split(':')
+        if ($parts.Count -ne 2) { throw "Bad -Steps entry '$spec'; expected name:xFraction,yFraction" }
+        $xy = $parts[1].Split(',')
+        if ($xy.Count -ne 2) { throw "Bad -Steps entry '$spec'; expected name:xFraction,yFraction" }
+        $clickSteps += [pscustomobject]@{ Name = $parts[0]; FracX = [double]$xy[0]; FracY = [double]$xy[1] }
+    }
+}
+
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public class MeasureClientNative {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+    [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr hWnd, out RECT rect);
+}
+'@
+
+function Get-LiveClient {
+    param([Parameter(Mandatory)][int]$ProcessId)
+
+    $process = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+    if (-not $process) { return $null }
+    $rect = New-Object MeasureClientNative+RECT
+    if ([MeasureClientNative]::GetClientRect($process.MainWindowHandle, [ref]$rect)) {
+        $width = $rect.Right - $rect.Left
+        $height = $rect.Bottom - $rect.Top
+        if ($width -gt 0 -and $height -gt 0) { return [pscustomobject]@{ Width = $width; Height = $height } }
+    }
+    return $null
+}
 
 function Get-HostsSnapshot {
     param([Parameter(Mandatory)][string]$Path)
@@ -87,7 +145,7 @@ if (-not (Test-Path -LiteralPath $OutputDirectory)) {
     New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 }
 
-$existing = Get-Process -Name 'WalkingDead101' -ErrorAction SilentlyContinue | Select-Object -First 1
+$existing = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($existing) {
     Write-Error "The game is already running (pid $($existing.Id)); close it before measuring."
     exit 20
@@ -98,7 +156,7 @@ $before = Join-Path $OutputDirectory 'latency-before.png'
 $after = Join-Path $OutputDirectory 'latency-after.png'
 
 $started = Get-Date
-Start-Process 'steam://rungameid/207610'
+Start-Process ("steam://rungameid/{0}" -f $SteamAppId)
 
 $timeline = New-Object System.Collections.Generic.List[object]
 $windowAt = $null
@@ -108,22 +166,33 @@ $attempts = @{}
 $deadline = $started.AddSeconds($TimeoutSeconds)
 $accepted = @{}
 
-while ((Get-Date) -lt $deadline -and $stepIndex -lt $steps.Count) {
-    $process = Get-Process -Name 'WalkingDead101' -ErrorAction SilentlyContinue | Select-Object -First 1
+while ((Get-Date) -lt $deadline -and $stepIndex -lt $clickSteps.Count) {
+    $process = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $process) { Start-Sleep -Milliseconds 600; continue }
 
     $processId = $process.Id
     $elapsed = [math]::Round(((Get-Date) - $started).TotalSeconds, 2)
     if ($null -eq $windowAt) { $windowAt = $elapsed }
 
-    $step = $steps[$stepIndex]
+    $step = $clickSteps[$stepIndex]
     if (-not $attempts.ContainsKey($step.Name)) { $attempts[$step.Name] = 0 }
     $attempts[$step.Name]++
+
+    if ($relativeSteps) {
+        $client = Get-LiveClient -ProcessId $processId
+        if (-not $client) { Start-Sleep -Milliseconds 500; continue }
+        $pointX = [int][math]::Round($step.FracX * $client.Width)
+        $pointY = [int][math]::Round($step.FracY * $client.Height)
+    } else {
+        $client = $null
+        $pointX = $step.Point[0]
+        $pointY = $step.Point[1]
+    }
 
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inputTool `
         -Action Capture -CaptureMethod Window -OwnerPid $processId -OutputPath $before | Out-Null
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inputTool `
-        -Action Click -X $step.Point[0] -Y $step.Point[1] -OwnerPid $processId | Out-Null
+        -Action Click -X $pointX -Y $pointY -OwnerPid $processId | Out-Null
     Start-Sleep -Milliseconds 1200
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inputTool `
         -Action Capture -CaptureMethod Window -OwnerPid $processId -OutputPath $after | Out-Null
@@ -140,6 +209,8 @@ while ((Get-Date) -lt $deadline -and $stepIndex -lt $steps.Count) {
         t = $elapsed
         step = $step.Name
         attempt = $attempts[$step.Name]
+        click = ('{0},{1}' -f $pointX, $pointY)
+        client = $(if ($client) { '{0}x{1}' -f $client.Width, $client.Height } else { 'fixed' })
         diff = $diff
         accepted = ($diff -ge $ChangeThreshold)
     })
@@ -160,18 +231,25 @@ while ((Get-Date) -lt $deadline -and $stepIndex -lt $steps.Count) {
     Start-Sleep -Milliseconds 300
 }
 
+$lastStep = $clickSteps[$clickSteps.Count - 1].Name
 $result = [pscustomobject]@{
     Label = $Label
     StartedAt = $started.ToString('s')
+    ProcessName = $ProcessName
+    SteamAppId = $SteamAppId
+    ClickPath = ($clickSteps | ForEach-Object { $_.Name }) -join ' -> '
+    StepsAreRelative = $relativeSteps
     Pid = $processId
     WindowSeconds = $windowAt
     TitleContinueSeconds = $accepted['title-continue']
     MainMenuSeconds = $accepted['main-menu-play']
     SlotListSeconds = $accepted['slot-row']
     EpisodePageSeconds = $accepted['slot-play']
-    UsableSeconds = $accepted['slot-play']
+    LastStepSeconds = $accepted[$lastStep]
+    UsableSeconds = $accepted[$lastStep]
     StepsAccepted = $accepted.Count
-    Attempts = ($steps | ForEach-Object { '{0}={1}' -f $_.Name, $attempts[$_.Name] }) -join ' '
+    StepsTotal = $clickSteps.Count
+    Attempts = ($clickSteps | ForEach-Object { '{0}={1}' -f $_.Name, $attempts[$_.Name] }) -join ' '
     ChangeThreshold = $ChangeThreshold
     HostsHash = $hosts.Hash
     HostsEntries = $hosts.Entries
@@ -184,11 +262,13 @@ $file = Join-Path $OutputDirectory ("latency-$Label-{0}.json" -f (Get-Date -Form
 $result | Format-List
 
 if (-not $KeepRunning -and $processId -ne 0) {
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inputTool -Action Click -X $exitPoint[0] -Y $exitPoint[1] -OwnerPid $processId | Out-Null
-    Start-Sleep -Seconds 4
+    if (-not $relativeSteps) {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inputTool -Action Click -X $exitPoint[0] -Y $exitPoint[1] -OwnerPid $processId | Out-Null
+        Start-Sleep -Seconds 4
+    }
     if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
         Stop-Process -Id $processId -Force
-        Write-Host 'The frontend EXIT GAME click did not close the game; closed the measured process.'
+        Write-Host 'Closed the measured process.'
     }
 }
 

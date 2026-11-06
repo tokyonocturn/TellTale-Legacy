@@ -41,7 +41,7 @@ requires an account that has signed in on that machine with a cached licence.
 | `twd-s3-steam-536220` | A New Frontier | 536220 | 2784143 | `WalkingDead3.exe` | `services.telltalegames.com` | `twd-s3-v1.0.0` |
 | `twd-michonne-steam-429570` | Michonne | 429570 | 1094475 | `WalkingDeadMichonne.exe` | `services.telltalegames.com` | `twd-michonne-v1.0.0` |
 | `twd-s4-steam-866800` | The Final Season | 866800 | 3679591 | `WalkingDead4.exe` | `services.telltalegames.com` | `twd-s4-v1.0.0` |
-| `twd-definitive-steam-1449690` | Definitive Series | 1449690 | 5952618 | `WDC.exe` | `services.telltalegames.com` | `twd-definitive-v1.0.0` |
+| `twd-definitive-steam-1449690` | Definitive Series | 1449690 | 5952618 | `WDC.exe` | `services.telltalegames.com` | `twd-definitive-v1.0.0` (launch measured, doc 21) |
 
 Every row above was read from this machine: the app id and build id from the Steam
 `appmanifest_<appid>.acf`, the executable and its hashes from the install directory itself.
@@ -79,7 +79,8 @@ these builds were running, and the profiles say so.
 | Patch install and revert are byte-exact and per-game | **VERIFIED** | automated: `tests/Run-Tests.ps1` installs two games' patches, removes one and checks the other survives, then checks the last removal restores the original hosts bytes |
 | The patch refuses a build it was not written for | **VERIFIED** | automated: a mismatched executable exits 24 and pins nothing |
 | The Definitive Series install and its executable hash | **VERIFIED** | `-Action Status` on this machine after installation: `BuildMatches: True` against `WDC.exe`, app 1449690, build 5952618 |
-| Offline launch time on Seasons 2, 3, 4, Michonne and the Definitive Series | **UNTESTED** | no launch was timed on those builds; their profiles record `launchVerification: UNTESTED` |
+| Offline launch of the Definitive Series with the patch installed | **VERIFIED** | main menu at 18.54 s with the client and game cut off; the menu accepted a click that opened the season chooser (doc 21) |
+| Offline launch time on Seasons 2, 3, 4 and Michonne | **UNTESTED** | no launch was timed on those builds; their profiles record `launchVerification: UNTESTED` |
 | Gameplay, saves and episode transitions offline on those builds | **UNTESTED** | nothing was played; only Season 1 has gameplay evidence (doc 08) |
 | Whether the Definitive Series launcher shows a Telltale sign-in prompt offline | **UNTESTED** | `WDC.exe` contains that sentence as a string; no launch was made to see whether it is reachable |
 
