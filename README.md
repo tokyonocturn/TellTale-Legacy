@@ -229,8 +229,10 @@ See [docs/installation.md](docs/installation.md) for prerequisites and details.
 * Milestone 4: save-container research (keystream/compression identification) so
   decisions can be verified by content rather than behaviour, without extracting
   assets.
-* Later: Season 2, 400 Days, and the Definitive Series as **separate** profiles;
-  the engine is shared but content layout and DRM differ.
+* Later: 400 Days as its own profile, and the Definitive Series last: its app is
+  registered on this machine but not downloaded (`SizeOnDisk 0`, empty install
+  folder), so its profile and endpoints wait until there is a build to read. The
+  engine is shared but content layout and DRM differ across all of these.
 
 ## Legal
 
