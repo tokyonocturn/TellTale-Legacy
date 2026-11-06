@@ -170,6 +170,7 @@ tools/                    Preservation tooling (PowerShell 5.1, no external depe
   Set-SteamOfflineMode.ps1  Puts Steam in Offline Mode so an offline launch does not wait
   Set-OfflineLaunchPatch.ps1  Pins the publisher hostnames to loopback (byte-reversible)
   Set-GameOfflinePatch.ps1  Applies, reports or reverts one game's patch after a build check
+  Invoke-UnattendedRun.ps1  Drives an episode with nobody at the controls and logs what it saw
   New-ReleasePackage.ps1  Builds one self-contained zip and manifest per game profile
   Measure-LaunchLatency.ps1  Times a launch to a usable frontend by driving it
   classify_frame.py       Frame measurement helper used by the latency instrument
