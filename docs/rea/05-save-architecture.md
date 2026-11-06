@@ -1,4 +1,4 @@
-# REA 05 — Save, preference and progression architecture
+# REA 05: Save, preference and progression architecture
 
 ## Where state lives
 
@@ -31,7 +31,7 @@ CacheSaveGameImage / GetSaveGameImage
 On this fresh installation no `.save` files exist yet because no new game has been
 started. A save slot is therefore expected at
 `...\The Walking Dead\<Title> - <NN>.save`, with a companion image/metadata path
-handled by the engine. **This has not yet been observed on disk** — it is the first
+handled by the engine. **This has not yet been observed on disk**: it is the first
 thing Milestone 2 must confirm.
 
 ## Preference persistence

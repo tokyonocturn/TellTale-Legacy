@@ -46,7 +46,7 @@ archive headers. Emits one JSON document consumed by reports and tests.
 
 Design notes:
 
-* Archives are read header-only (first 32 bytes) — 388 MB files are never loaded.
+* Archives are read header-only (first 32 bytes); 388 MB files are never loaded.
 * Executables/libraries are read fully for PE parsing; there are only four.
 * Hashing is optional (`-SkipHash`) because a full run reads 3.5 GiB.
 
@@ -65,11 +65,11 @@ because warnings describe risk rather than blocking conditions.
 
 Three launch modes:
 
-* `-ViaSteam` — the supported route; starts `steam://rungameid/<appid>` and waits
+* `-ViaSteam`: the supported route; starts `steam://rungameid/<appid>` and waits
   up to 120 s for the process, then records it.
-* direct — for completeness and for capturing the `RestartAppIfNecessary` exit
+* direct execution: for completeness and for capturing the `RestartAppIfNecessary` exit
   behaviour.
-* `-AttachProcessId` — observes a session the user started themselves.
+* `-AttachProcessId`: observes a session the user started themselves.
 
 It refuses to launch when the game is already running (except in attach mode), so a
 real player session is never disturbed. Sampling is every 2 s; endpoints come from
@@ -169,7 +169,7 @@ and `08-offline-gameplay-verification.md` is the only place gameplay results liv
 
 ## Milestone 2 result
 
-The completion criterion — start, save, close, restart, resume with the publisher
-API unavailable — was met twice on build 244978. No game file was modified and no
+The completion criterion (start, save, close, restart, resume with the publisher
+API unavailable) was met twice on build 244978. No game file was modified and no
 Telltale service needed a local replacement, so no compatibility patch exists or
 is planned for this build.

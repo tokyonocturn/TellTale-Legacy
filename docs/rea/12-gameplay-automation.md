@@ -1,4 +1,4 @@
-# REA 12 — Driving the game with real input (playthrough attempt)
+# REA 12: Driving the game with real input (playthrough attempt)
 
 This record covers the first attempt to play Episode 1 **through automation**: real
 mouse and keyboard input delivered to the game window, screen evidence captured
@@ -11,7 +11,7 @@ be claimed from menus. Everything below is what the game actually did.
 
 | Element | Detail |
 |---|---|
-| Input | `tools/Invoke-GameInput.ps1` — `SendInput` for keys, `mouse_event` for buttons, `SetCursorPos` for aiming; client coordinates converted with `ClientToScreen` |
+| Input | `tools/Invoke-GameInput.ps1`: `SendInput` for keys, `mouse_event` for buttons, `SetCursorPos` for aiming; client coordinates converted with `ClientToScreen` |
 | Capture | `PrintWindow` with `PW_RENDERFULLCONTENT` (0x2). Plain `PrintWindow` returns a blank DirectX surface; `CopyFromScreen` was rejected because another window on the desktop could sit over the game and appear in the capture |
 | Observation | Frames sampled at fixed intervals, downscaled, mean-grey-level deltas between frames to tell "the view changed" from "the view is frozen" |
 | Build | Steam app 207610, build 244978, unmodified files |
@@ -59,7 +59,7 @@ clicks were lost to exactly that before it was measured.
 | Observation | Result |
 |---|---|
 | Save loaded | `Game 1`, Episode 1, timestamp 05/11/26 17:03:36, then 11/26 01:52:30 after the resume |
-| Chapter (from the in-game chapter browser) | **Chapter 2: In The Yard** — the browser labels it, and its thumbnail is the aerial view of the yard |
+| Chapter (from the in-game chapter browser) | **Chapter 2: In The Yard**: the browser labels it, and its thumbnail is the aerial view of the yard |
 | Chapter start replayed | Yes, via `REWIND` → confirmation `Yes`; the chapter's opening cinematic played from its first frame (walkers at a fence, red wagon, Lee close-up) |
 | Free movement | Yes in the yard: Lee walked to the porch, the treehouse tree and the fence corner |
 | Story progress | **None beyond the chapter's opening shot** |
@@ -67,9 +67,9 @@ clicks were lost to exactly that before it was measured.
 ## Where it stopped, and what is actually known
 
 After the chapter's opening cinematic the game settles on a static shot of Lee
-standing in the yard. Over roughly five minutes of probing — click-and-hold on
+standing in the yard. Over roughly five minutes of probing; click-and-hold on
 walkable ground, clicks on the porch, the door, the treehouse ladder, the fence and
-the walker beyond it, camera sweeps in every direction, `Space` and digits — no
+the walker beyond it, camera sweeps in every direction, `Space` and digits; no
 input produced any state change. `Esc` → `RESUME GAME` returned to the identical
 shot, so the session itself was alive.
 
@@ -92,7 +92,7 @@ those happened.
 | Check | Result |
 |---|---|
 | Policy store entries | 700 before, 700 after, none added or removed |
-| Per-value comparison | 0 changed, 0 added, 0 removed — identical hash under one normalisation |
+| Per-value comparison | 0 changed, 0 added, 0 removed; identical hash under one normalisation |
 | Default render endpoint | Voicemeeter AUX Input (`Default = True`), unchanged |
 | `100027813` | active, not default, `PeakMax = 0` |
 | Game process | exited through `EXIT GAME` → `Yes`, no crash |
@@ -128,7 +128,7 @@ Start-Process 'steam://rungameid/207610'          # ~30 s to the main menu
 ## Update: re-tested with the game's audio working
 
 The earlier note left two readings of the Chapter 2 stall open, one of them "a chapter
-that cannot advance, consistent with silence". The silence has since been fixed — the
+that cannot advance, consistent with silence". The silence has since been fixed; the
 game's own `VOICE/MUSIC/SOUND` were all at zero and are now 10/10/10, with measured
 audio at 0.44–0.79 peaks during the chapter's own cinematics
 ([`13-audio-delivery.md`](13-audio-delivery.md)). The stall is unchanged.
@@ -140,8 +140,8 @@ Each probe below was run **with audio playing**, in the same still shot:
 | Click sweep | 12 points across the picture (3 rows × 4 columns), each preceded by a pointer move | Camera swings; no dialogue, no choice UI, no scene change |
 | Walk | 8 × 2.2 s held clicks along the visible sidewalk | Lee does not move |
 | Walk (drag) | 3 held drags, including a slow steer | Lee does not move |
-| Interact | Click on Lee, click at his feet | Frame delta 1.3 then 0.2 — no state change |
-| Keys | `Q`, `E`, `R`, `F`, `Tab`, `Enter`, `Space`, digits | Frame delta **0.0** — nothing at all |
+| Interact | Click on Lee, click at his feet | Frame delta 1.3 then 0.2; no state change |
+| Keys | `Q`, `E`, `R`, `F`, `Tab`, `Enter`, `Space`, digits | Frame delta **0.0**: nothing at all |
 | Menus | `Esc` → `RESUME` | Returns to the identical still shot |
 | Chapter replay | `REWIND` → `Yes`, replayed from the chapter's first frame | Cinematic plays, then the same still shot |
 

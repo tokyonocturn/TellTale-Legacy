@@ -1,4 +1,4 @@
-# 10 — Episode completion and the Episode 1 → Episode 2 transition
+# 10: Episode completion and the Episode 1 → Episode 2 transition
 
 Status: **not verified.** M3 requires Episode 1 to be played to its ending and the
 transition into Episode 2 to be observed with the publisher unavailable. Episode 1
@@ -21,7 +21,7 @@ Everything below is separated into **observed** (measured on this machine) and
 
 There is no `Pack/WalkingDead101`: Episode 1 ships in `Pack/default`, while
 Episodes 2–5 each get a directory named after their build. Episode 2 carries all
-six asset classes — `data`, `voice`, `ms`, `tx`, `mesh`, `anichore` — plus 19
+six asset classes: `data`, `voice`, `ms`, `tx`, `mesh`, `anichore`: plus 19
 patch archives, so it is a complete local episode rather than a stub awaiting a
 download.
 
@@ -60,7 +60,7 @@ Session `docs/rea/data/sessions/20261105-173323-m3-episode-status-offline.json`:
 - `api.telltalegames.com` and `meta.telltalegames.com` → `127.0.0.1` in the marked
   hosts block, Steam left online (DRM untouched).
 - Launched through Steam, observed 130 s, reached the main menu.
-- `RemoteEndpoints: []` for the whole session — no remote connection was held.
+- `RemoteEndpoints: []` for the whole session; no remote connection was held.
 - The main menu rendered normally, including the scrolling banner ("For the latest
   information on The Walking Dead five-part game series, please visit the official
   website www.walkingdeadthegame.com"), so that banner is local text, not a feed.
@@ -73,7 +73,7 @@ The `PLAY` slot list was reached and read: one saved game labelled `Game 1`,
 `BACK / COPY / DELETE / PLAY` actions.
 
 **Not observed:** the `EPISODE STATUS` screen itself. Menu input in this
-environment is unreliable — a first click registered, after which the same window
+environment is unreliable; a first click registered, after which the same window
 accepted neither synthesised clicks (SendInput, foreground confirmed, no window
 overlapping the target) nor `WM_LBUTTON*`/`Esc`. The screen was abandoned rather
 than driven blind, because blindly clicking episode rows risks starting an episode
@@ -100,17 +100,17 @@ is opaque, so this is behaviour, not decoded content.
 These are the M3 questions that remain open, in the order the attended session will
 answer them:
 
-1. **Discovery** — after Episode 1 ends, does Episode 2 appear as playable without
+1. **Discovery**: after Episode 1 ends, does Episode 2 appear as playable without
    any publisher response?
-2. **Transfer** — does the completed Episode 1 progression produce an Episode 2
+2. **Transfer**: does the completed Episode 1 progression produce an Episode 2
    start state, or does the episode open as a fresh game?
-3. **Choice carry-over** — at least one decision must be visible in Episode 2. The
+3. **Choice carry-over**: at least one decision must be visible in Episode 2. The
    planned observables are the drugstore survivor (Carley vs Doug) and the
    consequence tied to them at the motel; both are visible in play without reading
    the container.
-4. **No extra components** — Episode 2 must start from the installed archives alone:
+4. **No extra components**: Episode 2 must start from the installed archives alone:
    no additional executable, no additional pack, no download.
-5. **Restart persistence** — exiting and relaunching offline must keep both the
+5. **Restart persistence**: exiting and relaunching offline must keep both the
    Episode 1 completion state and the Episode 2 progress.
 
 None of these is answered by static inspection. Episode 2 being present on disk
@@ -161,7 +161,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-Progression.ps1 `
 ## Blocker
 
 Episode 1 cannot be completed by the agent. It is roughly two hours of narrative
-play — dialogue choices, QTEs, exploration — and the game has **no chapter select**:
+play (dialogue choices, QTEs, exploration) and the game has **no chapter select**:
 progression is autosave-only, so reaching the ending means playing forward from the
 current checkpoint. Driving that with synthesised input would produce a fabricated
 result, and editing save files to skip ahead is forbidden by the project rules.

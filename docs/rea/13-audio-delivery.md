@@ -1,4 +1,4 @@
-# REA 13 — Getting the game's audio onto `100027813`
+# REA 13: Getting the game's audio onto `100027813`
 
 This is the record of how the game's audio was made to reach the endpoint that the
 mission requires, what was measured at each step, and what is still not proven. It
@@ -9,8 +9,8 @@ that conclusion was wrong, and the correction is the reason the problem was solv
 
 | # | Fault | Evidence | Fix |
 |---|---|---|---|
-| 1 | **Every in-game volume was 0** — `VOICE 0, MUSIC 0, SOUND 0` — so the engine rendered silence everywhere | Measured at the main menu: game session `Active`, `Volume 1.00`, `Muted False`, `Peak 0.000000`; the game's own AUDIO screen showed 0/0/0 | Set 10/10/10 in the game's AUDIO screen (originals recorded as 0/0/0) |
-| 2 | **Windows per-app redirection is accepted and ignored** on this machine | `11-audio-routing.md`: selection persisted across a restart and read back, session never moved — for the game *and* a control tone, on three devices including a known-good one | Not used; replaced by a stream-level shim |
+| 1 | **Every in-game volume was 0**: `VOICE 0, MUSIC 0, SOUND 0`: so the engine rendered silence everywhere | Measured at the main menu: game session `Active`, `Volume 1.00`, `Muted False`, `Peak 0.000000`; the game's own AUDIO screen showed 0/0/0 | Set 10/10/10 in the game's AUDIO screen (originals recorded as 0/0/0) |
+| 2 | **Windows per-app redirection is accepted and ignored** on this machine | `11-audio-routing.md`: selection persisted across a restart and read back, session never moved, for the game *and* a control tone, on three devices including a known-good one | Not used; replaced by a stream-level shim |
 | 3 | **Voicemeeter does not re-open a bus device from a settings load** | Loading a settings file with `OutputDev index='1'` changed to the target left A1 on the headphones; Voicemeeter opened a session on the target that metered `0.0000` | Not used |
 
 Fault 1 is the one that mattered most, and it was invisible from peak meters alone
@@ -20,7 +20,7 @@ because a muted-by-volume engine and a broken endpoint look identical from outsi
 
 The Windows side was never the problem:
 
-- The game's session reported `Volume 1.00`, `Muted False` on the default endpoint —
+- The game's session reported `Volume 1.00`, `Muted False` on the default endpoint,
   read through `ISimpleAudioVolume::GetMasterVolume`/`GetMute`, not inferred from peaks.
 - The default device was `Voicemeeter AUX Input`, whose chain was proven carrying audio
   by playing a control tone and measuring `0.385586` on the headphones downstream.
@@ -35,7 +35,7 @@ during the chapter cinematic. That is a *measured* change caused by one setting 
 What is established: at the start of this session all three were 0, and after APPLY they
 are 10/10/10. The plausible explanation is that the earlier restore targeted the pause
 menu's copy of the screen and did not commit, or that a later exit re-wrote prefs from
-the pre-test state — the save container is opaque, so this cannot be read back directly.
+the pre-test state; the save container is opaque, so this cannot be read back directly.
 It is recorded as an open question rather than a claim.
 
 ## Fault 2 and the delivery mechanism
@@ -43,7 +43,7 @@ It is recorded as an open question rather than a claim.
 Since the OS will not redirect one application's stream, the project carries the stream
 itself. `tools/Start-AudioMirror.ps1`:
 
-1. Opens the source endpoint (`Voicemeeter AUX Input`, still the system default — the
+1. Opens the source endpoint (`Voicemeeter AUX Input`, still the system default; the
    game keeps rendering there, exactly as before) in **WASAPI loopback** mode.
 2. Opens the target endpoint (`100027813 (NVIDIA High Definition Audio)`) for rendering
    in shared mode, using the source's mix format (48 kHz, 2ch, 32-bit float).
@@ -74,7 +74,7 @@ API: `Strip[4].A1 = 0` (strip 4 is the `Voicemeeter AUX Input` strip). Consequen
 
 - The game's audio no longer reaches `Headphones` through the mixer.
 - The loopback capture happens **before** the strip, so the mirror still sees everything
-  the game renders — the two operations are independent.
+  the game renders; the two operations are independent.
 - Other applications keep their own routing; the user's non-game audio still reaches the
   headphones through the untouched `Voicemeeter Input` strip (`Strip[3].A1 = 1`).
 
@@ -117,8 +117,8 @@ The system default endpoint is **unchanged** throughout: `Voicemeeter AUX Input`
 ### Policy store footprint
 
 The store was measured again after all of this work: 700 entries, identical hash,
-0 changed, 0 removed. Two entries *were* created along the way — Windows records a
-per-app route the first time a process renders to a device — both for
+0 changed, 0 removed. Two entries *were* created along the way; Windows records a
+per-app route the first time a process renders to a device, both for
 `powershell.exe` (one for the HDMI topology, one for the Bluetooth hands-free
 device), created by the probe and the mirror. Each was exported
 (`backups/policy-entry-348a5aac.reg`, `backups/policy-entry-6eee855e.reg`) and then

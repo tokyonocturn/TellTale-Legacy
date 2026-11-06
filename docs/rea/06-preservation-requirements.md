@@ -1,48 +1,48 @@
-# REA 06 — Preservation requirements and milestone status
+# REA 06: Preservation requirements and milestone status
 
 ## Requirements derived from the investigation
 
-### R1 — Licence and DRM stay intact (hard requirement)
+### R1: Licence and DRM stay intact (hard requirement)
 
 `WalkingDead101.exe` contains a `.bind` Steam DRM section and requires
 `SteamAPI_Init`. Preservation must work **with** Steam, never around it. Any
 proposal that patches the executable, emulates Steam, or injects a licence is out
 of scope and must be rejected in review.
 
-### R2 — Legitimate offline path must be documented and tested
+### R2: Legitimate offline path must be documented and tested
 
 Steam Offline Mode with a cached licence is the supported offline mechanism. The
 project must state this plainly, verify the game works under it, and distinguish it
 from "the game has no online features".
 
-### R3 — Publisher API failure must be survivable
+### R3: Publisher API failure must be survivable
 
 Startup contacts `api.telltalegames.com`. Verified: the game reaches the main menu
 with that host unreachable. Preservation must not depend on that service remaining
 online, and must not attempt to substitute or impersonate it.
 
-### R4 — Saves must be recoverable
+### R4: Saves must be recoverable
 
 State is local, small and mutable at exit. Automated, hash-verified backup/restore
 with a pre-restore safety copy is required before any compatibility experiment.
 
-### R5 — Version identity must be explicit
+### R5: Version identity must be explicit
 
 Different builds (Steam original, 400 Days bundle, Definitive Series, console
 re-releases) must never share a profile. Every result is tied to an executable hash
 plus Steam build id.
 
-### R6 — No proprietary content in the repository
+### R6: No proprietary content in the repository
 
 No executables, archives, extracted assets, decrypted props, or personal saves.
 Tools only read a user's own installation and write backups on that user's machine.
 
-### R7 — Claims must be testable
+### R7: Claims must be testable
 
 Every compatibility statement must point at a recorded session, a hash, or an
 automated test. Distinguish "observed", "inferred" and "unknown".
 
-## Milestone 1 — complete
+## Milestone 1: complete
 
 Delivered and verified on the target installation:
 
@@ -75,7 +75,7 @@ Delivered and verified on the target installation:
 * Any build other than Steam app 207610 build 244978.
 * Behaviour with a Telltale account signed in (no account UI was reachable).
 
-## Milestone 2 — planned
+## Milestone 2: planned
 
 **Goal:** prove that a played session survives offline and a restart.
 
@@ -88,7 +88,7 @@ Delivered and verified on the target installation:
 4. Add save-slot inspection to `Get-GameInventory`-style tooling (metadata only).
 5. Record the prefs format delta across launches to confirm exit-time persistence.
 
-## Milestone 3 — planned
+## Milestone 3: planned
 
 * Confirm archive mount order and patch precedence by observation.
 * Document the ttarch v9 table layout (no asset extraction shipped).

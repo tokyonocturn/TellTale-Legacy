@@ -1,4 +1,4 @@
-# 11 — Audio endpoint `100027813`
+# 11: Audio endpoint `100027813`
 
 Status: **endpoint identified, game audio measured on the default device, per-app
 routing attempted through the supported Settings page and shown not to be applied by
@@ -12,7 +12,7 @@ NVIDIA HDMI audio output, and four enumerated devices carry that name:
 
 | Endpoint id | State | Outcome |
 |---|---|---|
-| `{0.0.0.00000000}.{63b45a0d-a22d-42a4-a438-b64a52829507}` | `DeviceState = 1` | **live — the target** |
+| `{0.0.0.00000000}.{63b45a0d-a22d-42a4-a438-b64a52829507}` | `DeviceState = 1` | **live: the target** |
 | `{0.0.0.00000000}.{825aafdd-89f4-42e0-b1dd-dc80ce2d628c}` | `0x20000004` | not present (stale) |
 | `{0.0.0.00000000}.{a17e01de-ea23-41fe-b932-fabccfab6dba}` | `0x20000004` | not present (stale) |
 | `{0.0.0.00000000}.{3c032cf1-7069-4bf3-8a04-c112b815c626}` | `0x20000004` | not present (stale) |
@@ -25,7 +25,7 @@ NVIDIA HDMI audio output, and four enumerated devices carry that name:
 | Device interface | `{2}.\\?\hdaudio#func_01&ven_10de&dev_009f&subsys_104388a8&rev_1001#5&2b74da90&0&0001#{6994ad04-93ef-11d0-a3cc-00a0c9223196}\topo00` |
 
 The Settings page offers exactly **one** `100027813 (NVIDIA High Definition Audio)`
-item in its output lists — the three stale duplicates are not offered. So the page
+item in its output lists; the three stale duplicates are not offered. So the page
 itself cannot be used to pick a wrong duplicate; only name-based resolution in code can.
 
 ## Instrumentation
@@ -44,14 +44,14 @@ attributed to its PID, rather than inferring from an endpoint's peak.
 Silence was a game setting, not a failure: `SETTINGS → AUDIO` had **`SOUND 0`** next to
 a menu with no music. Raising the three sliders to audible values (reversible test
 setting: `VOICE 10`, `MUSIC 10`, `SOUND 0` were the originals, recorded first, and
-restored afterwards — see the restore section) made the game produce sound:
+restored afterwards, see the restore section) made the game produce sound:
 
 ```
 WalkingDead101  pid 15380  Voicemeeter AUX Input  state=1  peak=0.050720
 ```
 
 That is the game's own session, in the foreground, playing menu/UI effects. Game audio
-therefore exists and is measurable — on the system default.
+therefore exists and is measurable, on the system default.
 
 ## The Settings-page route, driven by UI Automation
 
@@ -73,7 +73,7 @@ What the automation did, and what it proved:
 1. `ExpandCollapsePattern.Expand()` on the game's output combo listed 15 devices,
    including one `100027813 (NVIDIA High Definition Audio)`.
 2. `SelectionItemPattern.Select()` on that item was accepted without error.
-3. Reading the combo back showed `100027813 (NVIDIA High Definition Audio)` — and it
+3. Reading the combo back showed `100027813 (NVIDIA High Definition Audio)`: and it
    still showed that after the game was killed and relaunched (new PID, new row
    `App15380_ComboBox`). **Windows stored the choice.**
 
@@ -85,15 +85,15 @@ What the measurement then showed:
 | target endpoint peak during the same window | **0** |
 | fresh process started *after* the setting was stored | still rendered on Voicemeeter |
 
-### Control experiment — it is not the game
+### Control experiment: it is not the game
 
 A plain `System.Media.SoundPlayer` tone (WASAPI shared mode) was routed the same way,
 and measured the same way:
 
 | Target chosen in the page | Session device after selecting | New process started afterwards |
 |---|---|---|
-| `Headphones (3- E7 Stereo)` — a device that demonstrably renders | Voicemeeter AUX | Voicemeeter AUX |
-| `SHARP HDMI (NVIDIA High Definition Audio)` | Voicemeeter AUX | — |
+| `Headphones (3- E7 Stereo)`: a device that demonstrably renders | Voicemeeter AUX | Voicemeeter AUX |
+| `SHARP HDMI (NVIDIA High Definition Audio)` | Voicemeeter AUX | - |
 | `100027813 (NVIDIA High Definition Audio)` | Voicemeeter AUX | Voicemeeter AUX |
 
 A device that certainly works could not be targeted either. So the failure is not
@@ -102,8 +102,8 @@ accepted and persisted by the page but never applied by Windows on this machine.
 
 Registry evidence for that conclusion: the per-app policy store
 (`HKCU\Software\Microsoft\Internet Explorer\LowRegistry\Audio\PolicyConfig\PropertyStore`)
-did not change at all across the attempt — 700 entries, hash identical, per-value diff
-empty — so the page's override is not written to that store on this build. No audio
+did not change at all across the attempt: 700 entries, hash identical, per-value diff
+empty, so the page's override is not written to that store on this build. No audio
 Group Policy keys exist under `HKLM`/`HKCU\SOFTWARE\Policies\Microsoft\Windows\Audio`
 or `...\Windows\Multimedia`.
 
@@ -122,7 +122,7 @@ never renders". That is wrong, and the correction matters: a WASAPI tone rendere
 renders fine; the broken link is the per-application redirection, and so the endpoint
 was reached by carrying the stream to it instead. See
 [`13-audio-delivery.md`](13-audio-delivery.md) for the mechanism, the measurements and
-the two further causes — the game's own volumes being zero, and Voicemeeter's bus
+the two further causes: the game's own volumes being zero, and Voicemeeter's bus
 device selection not being reapplied without a restart.
 
 ## Machine state after the run (verified, not asserted)
@@ -131,7 +131,7 @@ device selection not being reapplied without a restart.
 |---|---|---|
 | Policy entries | 700 | **700** |
 | Policy hash (SHA-256 of sorted key=value) | `630B71A532AA250A28A8148FE157978A9145661CBEB253C6EB9F49E6A9126875` | **identical** |
-| Per-value diff | — | **empty** (not just a count match) |
+| Per-value diff | - | **empty** (not just a count match) |
 | Default render endpoint | Voicemeeter AUX Input | **Voicemeeter AUX Input** (`Default = True`) |
 | Target endpoint | active, not default | **active, not default, peak 0** |
 | Game row in Settings | `Default` | **`Default`** (reverted and read back) |
@@ -144,14 +144,14 @@ was entered.
 
 ## Manual steps (for a machine where per-app routing does work)
 
-**A. Route the game to `100027813`** — this is the step this machine's audio stack
+**A. Route the game to `100027813`**: this is the step this machine's audio stack
 refuses to honour:
 
 1. Launch the game and reach a screen with sound.
 2. `Win+I` → **System** → **Sound** → **App volume and device preferences**.
 3. Under *Telltale Games*, set **Output** to `100027813 (NVIDIA High Definition Audio)`.
    The page lists that name once; the three stale duplicates never appear here, so no
-   disambiguation is needed in the UI. (If you see it twice, reopen the page — only one
+   disambiguation is needed in the UI. (If you see it twice, reopen the page, only one
    is persisted.)
 4. Leave the **system default** on *Voicemeeter AUX Input*.
 

@@ -1,4 +1,4 @@
-# REA 16 — Offline acceptance matrix
+# REA 16: Offline acceptance matrix
 
 Every row is one thing the mission asks for, with the status it has actually earned. A row
 becomes VERIFIED only from evidence produced by the game itself; a menu appearing is not
@@ -6,10 +6,10 @@ evidence, and neither is a successful launch.
 
 **Status vocabulary**
 
-- **VERIFIED** — observed, with the capture, measurement or hash named in the evidence column.
-- **FAILED** — attempted and observed not to work, with the evidence.
-- **UNTESTED** — not attempted, or attempted without the conditions required to judge it.
-- **NOT AVAILABLE** — the content is not installed, so it cannot be tested here.
+- **VERIFIED**: observed, with the capture, measurement or hash named in the evidence column.
+- **FAILED**: attempted and observed not to work, with the evidence.
+- **UNTESTED**: not attempted, or attempted without the conditions required to judge it.
+- **NOT AVAILABLE**: the content is not installed, so it cannot be tested here.
 
 ## Current matrix
 
@@ -23,8 +23,8 @@ evidence, and neither is a successful launch.
 | Audio on endpoint `100027813` during play | **VERIFIED** | `Assert-AudioDelivery.ps1` exit 0, target peak 0.474285 / 0.386791, default unchanged, mirror running |
 | Save backup integrity and restore-by-hash | **VERIFIED** | `Test-BackupIntegrity.ps1` 7/7 files, sandboxed restore identical, one-byte tamper rejected |
 | Gameplay progression **with** network (Episode 1 past Chapter 2) | **VERIFIED** | owner's session: 6 → 9 save slots, `prefs.prop` 7,770 → 11,010 bytes, hashes recorded in `14-session-evidence.md` |
-| **Cold launch with publisher endpoints unavailable** | **VERIFIED** | `Test-OfflineLaunch.ps1`: block applied and verified, window reached the title screen, 11 frames captured — `17-offline-run.md` |
-| **Publisher endpoints unreachable during play** | **VERIFIED** | zero remote TCP connections during the harness observation and again with the game in-game on a fresh offline launch — `17-offline-run.md` |
+| **Cold launch with publisher endpoints unavailable** | **VERIFIED** | `Test-OfflineLaunch.ps1`: block applied and verified, window reached the title screen, 11 frames captured; `17-offline-run.md` |
+| **Publisher endpoints unreachable during play** | **VERIFIED** | zero remote TCP connections during the harness observation and again with the game in-game on a fresh offline launch; `17-offline-run.md` |
 | **Main menu / episode page offline** | **VERIFIED** | frames `off1`, `off2`, `off3`, `offl3` from the blocked runs |
 | **Save load offline** | **VERIFIED** | slot list populated, episode page rendered, chapter loaded into the motor inn gameplay scene with zero connections (pid 6056) |
 | **Restart then load offline** | **VERIFIED** | the scenario above is a fresh cold start of an existing save under the block |
@@ -67,7 +67,7 @@ the next action, not a claim made now.
 
 ---
 
-## Update — multi-episode offline drive (2026-11-06, later the same day)
+## Update: multi-episode offline drive (2026-11-06, later the same day)
 
 Everything above is the state before the multi-episode drive and is left as written. This
 section supersedes the rows it names; the run record is
@@ -75,19 +75,19 @@ section supersedes the rows it names; the run record is
 
 Block applied throughout: both domains → `127.0.0.1`, hosts hash
 `B90B7D4A3555404288F0B780ADD639523CAED8ABFB25CCBC1E873BEA80C3734`. Restored afterwards to
-`4DA2C479D9A3774B99BF03CECBC1FD26F731816DF9D7BCF076663BB1782B6097` — identical.
+`4DA2C479D9A3774B99BF03CECBC1FD26F731816DF9D7BCF076663BB1782B6097`: identical.
 
 | Feature | Status | Evidence |
 |---|---|---|
-| **Episode 1 finale, offline** | **VERIFIED** (playable to its last scene) | restored pre-drive save loaded straight into the finale conversation; live `hoist` chevron on the wall, attic, RV, motel horde with `Examine Zombie`/`Break Wall` widgets and the grab QTE, then the Lee/Clementine closing conversation with the game's own `You made a difficult choice` notice, then the night car scene — 0 remote connections, frames `g1`–`g3`, `hc`–`hd`, `k1`–`k46`, `z1`–`z2` |
+| **Episode 1 finale, offline** | **VERIFIED** (playable to its last scene) | restored pre-drive save loaded straight into the finale conversation; live `hoist` chevron on the wall, attic, RV, motel horde with `Examine Zombie`/`Break Wall` widgets and the grab QTE, then the Lee/Clementine closing conversation with the game's own `You made a difficult choice` notice, then the night car scene; 0 remote connections, frames `g1`–`g3`, `hc`–`hd`, `k1`–`k46`, `z1`–`z2` |
 | **Episode 1 ending + credits offline** | **UNTESTED** | the finale ran to its last scene offline, but no credits screen was captured; the session came back in Episode 1 Chapter 1 instead, and nothing in the frames attributes that to the network |
 | **Episode transition offline (1 → 2)** | **UNTESTED** | not exercised: Episodes 2–5 were started through the game's own "generate story decisions for skipped episodes" path, which is not the ending-driven transition |
 | **Episode 2 initialization offline** | **VERIFIED** (third attempt) | forest opening → walker attack → motel chapter with dialogue; `W` moved Lee (1,814,454 px) and the scene cut, 0 remote connections |
 | **Episode 3 initialization offline** | **VERIFIED** | title card → subtitled dialogue → truck scene; ladder click made Lee climb, live Kenny dialogue, `Attach Trailer Axle` widget, 0 remote connections |
 | **Episode 4 initialization offline** | **VERIFIED** | `LOADING` (~100 s) → Savannah/church opening cinematics → `W` walked Lee (1,299,901 px) with the camera following, 0 remote connections |
 | **Episode 5 initialization offline** | **VERIFIED** | morgue opening with live `LOOK AT` / `FIRE EXTINGUISHER` widgets → `W` walked Lee and the scene transitioned (1,549,343 px), 0 remote connections |
-| **Episode 2 opening, first cold load** | **FAILED** (twice), then not reproducible | frozen at `THREE MONTHS LATER` for >8 min: 0 connections, ~110–125 % one core, 464 KB/10 s read, pause menu live, audio peak 0.082031 on `100027813`, and a 9-point click grid plus `W`/`Space`/`Enter`/`E` changed nothing beyond ambient sway; the same prompt played with no stall once Episodes 3–5 had been loaded. Cause per the owner's finding: **this opening needs human input at the controls** — the harness's synthetic events do not carry it — so it is input/attention-side, **not** a network fault |
-| **Episode discovery / unlock state offline** | **VERIFIED** | the game's own EPISODE STATUS screen, block held, lists Episodes 1–5 as `Installed` and 400 Days as `Coming Soon` — `docs/rea/data/20261106-episode-status-offline.png`; each episode page offered `PLAY` and each episode started |
+| **Episode 2 opening, first cold load** | **FAILED** (twice), then not reproducible | frozen at `THREE MONTHS LATER` for >8 min: 0 connections, ~110–125 % one core, 464 KB/10 s read, pause menu live, audio peak 0.082031 on `100027813`, and a 9-point click grid plus `W`/`Space`/`Enter`/`E` changed nothing beyond ambient sway; the same prompt played with no stall once Episodes 3–5 had been loaded. Cause per the owner's finding: **this opening needs human input at the controls**: the harness's synthetic events do not carry it, so it is input/attention-side, **not** a network fault |
+| **Episode discovery / unlock state offline** | **VERIFIED** | the game's own EPISODE STATUS screen, block held, lists Episodes 1–5 as `Installed` and 400 Days as `Coming Soon`: `docs/rea/data/20261106-episode-status-offline.png`; each episode page offered `PLAY` and each episode started |
 | **Save creation offline** | **VERIFIED** | new saves written by the game with the block held: `save_11` (Ep2), `save_12` (Ep4), `save_13` (Ep5); `save_9`/`save_7`/`save_10` rewritten during the Episode 1 drive |
 | **Save persistence across restart offline** | **VERIFIED** | clean `EXIT GAME`, cold relaunch, slot row and episode pages rebuilt from the rewritten saves, Episode 1 finale reloaded from the restored profile |
 | **Cinematics (multi-episode) offline** | **VERIFIED** | Episodes 2–5 opening cinematics and the Episode 1 finale played with the block held, with subtitles and audio |
@@ -109,11 +109,11 @@ Block applied throughout: both domains → `127.0.0.1`, hosts hash
 
 ---
 
-## Update — the offline launch wait (2026-11-06, same day)
+## Update: the offline launch wait (2026-11-06, same day)
 
 | Feature | Status | Evidence |
 |---|---|---|
-| **Offline launch wait (the 60–90 s before play)** | **VERIFIED fixed** | with the client's and game's outbound traffic cut, Steam online never launched the game in 220 s; the same cut-off with Steam in Offline Mode reached a usable frontend at **11.63 s** (title 1.37 / menu 4.37 / slot 8.02 / episode page 11.63) — `19-offline-launch-stall.md` |
+| **Offline launch wait (the 60–90 s before play)** | **VERIFIED fixed** | with the client's and game's outbound traffic cut, Steam online never launched the game in 220 s; the same cut-off with Steam in Offline Mode reached a usable frontend at **11.63 s** (title 1.37 / menu 4.37 / slot 8.02 / episode page 11.63); `19-offline-launch-stall.md` |
 | Publisher endpoints as the cause of that wait | **REFUTED** | pinned to `127.0.0.1` → 19.93 s; unroutable `10.255.255.1` → 11.82 s; both fine, so the wait is client-side |
 | Offline launch patch is byte-reversibly removable | **VERIFIED** | `tests/Run-Tests.ps1`: hosts patch restores byte-identically and refuses when the file changed after install; Steam patch restores `loginusers.vdf` to its original hash |
 | Truly disconnected host (no adapter) | **UNTESTED** | reproduction used scoped firewall rules; pulling the machine's network was not done unilaterally |

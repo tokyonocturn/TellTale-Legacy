@@ -1,4 +1,4 @@
-# REA 04 — Online dependencies and offline behaviour
+# REA 04: Online dependencies and offline behaviour
 
 ## What was measured
 
@@ -19,7 +19,7 @@ api.telltalegames.com     18.245.113.61  1
 
 Reverse lookup: `server-18-245-113-61.dfw57.r.cloudfront.net`. The hostname is also
 reachable at `18.245.113.77/.118/.119`, i.e. a CDN front, so blocking a single IP
-would not be sufficient — the probe blocks the hostname.
+would not be sufficient; the probe blocks the hostname.
 
 ## The single startup-time publisher dependency
 

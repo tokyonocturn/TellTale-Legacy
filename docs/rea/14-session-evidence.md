@@ -1,9 +1,9 @@
-# REA 14 — Attended play session: evidence, and what it does not prove
+# REA 14: Attended play session: evidence, and what it does not prove
 
 The project owner is playing Episode 1 at the keyboard while this document was written.
 Everything here is a measurement taken *alongside* that session: the game was never given
 focus, sent input, paused, restarted or closed, and the audio mirror was left running
-untouched. The point of this record is to hold the line the mission asks for — evidence
+untouched. The point of this record is to hold the line the mission asks for: evidence
 produced by real play is worth more than anything a launch or a menu can show, and it is
 still not the same as a completed playthrough.
 
@@ -50,19 +50,19 @@ Across the recorded session's own samples (23 samples, 10:48:58Z → 10:54:48Z):
 
 The default device's friendly name was identical in every sample
 (`Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO)`), so the requirement to leave the
-user's default alone held for the whole recorded window — it did not merely hold at the
+user's default alone held for the whole recorded window; it did not merely hold at the
 start.
 
 ### The failure path is explicit, not silent
 
 | Condition | Verdict | Exit |
 |---|---|---|
-| Endpoint id not enumerated | `endpoint-missing` — states that nothing was measured or redirected | 3 |
+| Endpoint id not enumerated | `endpoint-missing`: states that nothing was measured or redirected | 3 |
 | Enumerated but not `active` | `endpoint-inactive` | 4 |
 | Default carried audio, target did not | `no-signal-on-target` | 5 |
 | Default device moved | `default-changed` | 6 |
 | Mirror process gone | `mirror-not-running` | 8 |
-| No audio anywhere to measure | `no-audio-to-measure` — explicitly *not* proof of failure | 9 |
+| No audio anywhere to measure | `no-audio-to-measure`: explicitly *not* proof of failure | 9 |
 
 Both the missing-endpoint and moved-default paths were exercised for real this turn (exit
 3 and exit 6) and are covered by tests.
@@ -82,7 +82,7 @@ from 7,770 to 11,010 bytes: the session is producing progression, not a static s
 
 **What this does not say.** The recorder proves *that* checkpoints were written and
 exactly which bytes they are. It does not by itself say which chapter or which dialogue
-choice produced them — that attribution needs the frames reviewed against the captured
+choice produced them; that attribution needs the frames reviewed against the captured
 saves, and that review has not been done. Treating the write list as a choice log would be
 exactly the kind of claim this project is supposed to refuse.
 
@@ -99,7 +99,7 @@ Against `backups/20261106-041144-ep1-playthrough`:
 | Files matching manifest | **7 / 7** |
 | Backup intact | true |
 | Restore proof (sandboxed) | true, 7 files materialized, all hashes identical |
-| Live saves vs manifest | 4 files changed (`prefs.prop`, `save_2`, `save_5`, `save_6`) — expected while a session is running, reported as drift not corruption |
+| Live saves vs manifest | 4 files changed (`prefs.prop`, `save_2`, `save_5`, `save_6`); expected while a session is running, reported as drift not corruption |
 | Tampered backup | correctly rejected: exit 10, naming `prefs.prop` with both hashes |
 
 The live save directory is only ever read by this tool; a real restore is deliberately not
@@ -118,9 +118,9 @@ Preflight at 10:52Z reported:
 | Hosts file | `C:\Windows\System32\drivers\etc\hosts`, SHA-256 `4DA2C479D9A3774B…` |
 | Currently blocked | false |
 | `api.telltalegames.com` resolves to | `18.245.113.118`, `.61`, `.77`, `.119` |
-| Game connections | `CloseWait 18.245.113.77:443` — i.e. the game **did** contact the API during play |
+| Game connections | `CloseWait 18.245.113.77:443`: i.e. the game **did** contact the API during play |
 | Elevated | false |
-| Ready | **false** — `needs-elevation`, `game-running` |
+| Ready | **false**: `needs-elevation`, `game-running` |
 
 That last observation is the useful one for the mission's online-dependency objective: the
 game is not merely configured to talk to the publisher API, it opened a connection to it
@@ -147,16 +147,16 @@ hosts file to the **identical** SHA-256 (covered by a test).
 
 **Unverified, and explicitly not claimed**
 
-- **Offline launch** — the game has been running the entire time; proving it launches and
+- **Offline launch**: the game has been running the entire time; proving it launches and
   plays with the API blocked requires closing it, which this turn was told not to do.
-- **Episode 1 completion, chapter transitions, the ending and the credits** — the session
+- **Episode 1 completion, chapter transitions, the ending and the credits**: the session
   is still in progress. No frame showing the final chapter or credits exists yet.
-- **Dialogue choices and their consequences** — checkpoints are recorded, but attributing
+- **Dialogue choices and their consequences**: checkpoints are recorded, but attributing
   each write to a specific choice needs the frames reviewed; not done.
-- **The Episode 1 → Episode 2 transition** — pending the episode ending.
-- **Audio across a restart or episode transition** — the endpoint, mirror and default are
+- **The Episode 1 → Episode 2 transition**: pending the episode ending.
+- **Audio across a restart or episode transition**: the endpoint, mirror and default are
   verified *now*; a restart would end this session, so persistence is pending.
-- **Audibility at the far end of the HDMI sink** — peak meters prove the samples reach the
+- **Audibility at the far end of the HDMI sink**: peak meters prove the samples reach the
   endpoint's engine, not that a listener hears them.
 
 ## Reproduce

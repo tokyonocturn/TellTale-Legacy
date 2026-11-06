@@ -1,4 +1,4 @@
-# REA 03 — Startup sequence (observed)
+# REA 03: Startup sequence (observed)
 
 All timings and states below come from real launches recorded by
 `tools/Start-ObservedSession.ps1` and from Steam's own logs

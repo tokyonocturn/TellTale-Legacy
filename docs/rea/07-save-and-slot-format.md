@@ -1,4 +1,4 @@
-# REA 07 — Save container and slot behaviour
+# REA 07: Save container and slot behaviour
 
 Scope: The Walking Dead, Steam app 207610, build 244978, executable
 `44a5ff21cbb085812c48179259141ff5c83eaeaa3423b4734b43533df0a2528d`.
@@ -29,7 +29,7 @@ slot than the one loaded.
 
 `prefs.prop` growth across the session: 6,447 → 6,591 → 6,647 → 6,795 → 7,581 →
 7,645 bytes. It carries the slot metadata the UI displays: the slot list rendered
-"Game 1 — Episode 1 — 05/11/26 16:53:35" with the publisher API unreachable,
+"Game 1 - Episode 1 - 05/11/26 16:53:35" with the publisher API unreachable,
 which means display name, episode and timestamp come from local state.
 
 ## Container layout (measured, not inferred from documentation)
@@ -58,17 +58,17 @@ per-file encrypted and/or compressed stream.
 
 Five independent tests, all negative:
 
-1. **Compressed-stream signatures** — no zlib/gzip/bzip2/xz/zstd header at any
+1. **Compressed-stream signatures**: no zlib/gzip/bzip2/xz/zstd header at any
    offset in any save. The two `78 da` byte pairs found inside payloads are
    coincidence: decompression at every offset 0–32 with `wbits` 15, −15 and 47
    yields nothing.
-2. **Compressibility** — zlib on the raw payload achieves ratio 0.992–0.996,
+2. **Compressibility**: zlib on the raw payload achieves ratio 0.992–0.996,
    i.e. the bytes are already at maximum entropy.
-3. **Entropy** — 7.981–7.988 bits/byte over 256 distinct byte values.
-4. **Repeating-key XOR** — index of coincidence after XOR-by-period is flat at
+3. **Entropy**: 7.981–7.988 bits/byte over 256 distinct byte values.
+4. **Repeating-key XOR**: index of coincidence after XOR-by-period is flat at
    ~0.0039 (random) for every period 1–64, and flat out to period 4,096. A short
    repeating key is ruled out.
-5. **Fixed-keystream cancellation** — XORing two different saves produces 7.972
+5. **Fixed-keystream cancellation**: XORing two different saves produces 7.972
    bits/byte of entropy and a zlib ratio of 0.991. If a single fixed keystream
    were applied, XORing would cancel it and expose plaintext structure. It does
    not, so the keystream is per-file (or the payload is compressed before
@@ -76,7 +76,7 @@ Five independent tests, all negative:
 
 Consequence, stated plainly: **no chapter, slot, decision or choice identifier is
 readable from a save file.** `save_1` and `save_6` differ in 98.28% of their
-overlapping bytes, and that number carries no semantic information — see
+overlapping bytes, and that number carries no semantic information; see
 `docs/rea/data/save-diff-1-6.json`.
 
 `prefs.prop` is different: entropy 6.44 with structural autocorrelation
@@ -112,10 +112,10 @@ payload is **not confirmed** for this build. The slot UI shows text only.
 
 ## Tools
 
-- `tools/Get-SaveArtifacts.ps1` — read-only inventory: magic validation, declared
+- `tools/Get-SaveArtifacts.ps1`: read-only inventory: magic validation, declared
   field, header block, slot number, entropy, hashes; refuses to write inside the
   save root; `-CompareA/-CompareB` for byte diffs; `-BaselinePath` for drift.
-- `tools/Backup-GameProfile.ps1` / `Restore-GameProfile.ps1` — hash-verified
+- `tools/Backup-GameProfile.ps1` / `Restore-GameProfile.ps1`: hash-verified
   snapshots and restores of the whole save root, including `.save` and `.prop`.
 
 Evidence: `docs/rea/data/save-artifacts.json`, `save-artifacts-before-m2.json`,

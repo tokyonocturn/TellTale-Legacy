@@ -53,7 +53,7 @@ foreach ($domain in $Domains) {
 
 $systemHostsPath = Join-Path $env:WINDIR 'System32\drivers\etc\hosts'
 # Note: PowerShell variable names are case-insensitive, so this must NOT be called
-# $hostsPath — that would overwrite the $HostsPath parameter and break the
+# $hostsPath: that would overwrite the $HostsPath parameter and break the
 # $liveResolution check below.
 $effectiveHostsPath = if ($HostsPath) { $HostsPath } else { $systemHostsPath }
 # A caller-supplied hosts file is a fixture: never touch live DNS for it.

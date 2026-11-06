@@ -1,4 +1,4 @@
-# REA 01 — Forensic inventory
+# REA 01: Forensic inventory
 
 Target: `C:\Program Files (x86)\Steam\steamapps\common\The Walking Dead`
 Captured: 2026-11-05, on the machine that owns the installation.

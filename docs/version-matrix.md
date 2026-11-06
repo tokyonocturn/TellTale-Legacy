@@ -11,7 +11,7 @@ that were actually exercised on that exact build.
 
 Full hashes are in `profiles/twd-s1-steam-207610/profile.json`.
 
-### Scenario detail — `twd-s1-steam-207610`
+### Scenario detail: `twd-s1-steam-207610`
 
 | Scenario | Result | Evidence |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ Full hashes are in `profiles/twd-s1-steam-207610/profile.json`.
 | Preference persistence across exit | file rewritten, size changed | three sessions |
 | New game, Episode 1 gameplay (API blocked) | played to multiple autosaves | `08-offline-gameplay-verification.md` |
 | Save creation | `save_1/5/6.save`, magic `bbdeaf64` | `save-artifacts.json` |
-| Slot list offline | `Game 1 — Episode 1 — 05/11/26 16:53:35` | `captures/04-slot-list.png` |
+| Slot list offline | `Game 1 - Episode 1 - 05/11/26 16:53:35` | `captures/04-slot-list.png` |
 | Restart + resume (API blocked) | checkpoint resumed, 0 TCP connections | sessions `m2-offline-resume-1/2` |
 | Repeated offline launch | second resume identical, `save_2` written | session `m2-offline-resume-2` |
 | Save-set integrity across test | added=2, changed=`prefs.prop`, no save altered | `save-drift-m2.json` |
@@ -32,10 +32,10 @@ Full hashes are in `profiles/twd-s1-steam-207610/profile.json`.
 | Transition readiness gate | ready (0 fail, 0 warn) on the real install | `transition-readiness.json` |
 | Save activity harness | progression chronology + drift + JSONL watcher | `save-progress-m3-baseline.json` |
 | Choice persistence | progression verified behaviourally; values not readable | `07-save-and-slot-format.md` |
-| Episode transition | **blocked** — needs full Ep1 playthrough; offline launch and Ep2 content verified | `10-episode-transition.md` |
+| Episode transition | **blocked**: needs full Ep1 playthrough; offline launch and Ep2 content verified | `10-episode-transition.md` |
 | Achievements offline | expected unavailable (Steam stats) | static analysis only |
-| 400 Days | **not applicable** — content not installed | `09-400-days-and-achievements.md` |
-| Full Steam Offline Mode run | **not tested** | — |
+| 400 Days | **not applicable**: content not installed | `09-400-days-and-achievements.md` |
+| Full Steam Offline Mode run | **not tested** | - |
 | Audio endpoint `100027813` | **identified** (`{63b45a0d-…}`), 3 of 4 same-named devices stale | `11-audio-routing.md` |
 | Game audio on `100027813` | **not routed / not verified** | `11-audio-routing.md` |
 

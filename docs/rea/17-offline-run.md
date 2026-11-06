@@ -1,4 +1,4 @@
-# REA 17 — Offline acceptance run (2026-11-06)
+# REA 17: Offline acceptance run (2026-11-06)
 
 The first run of the game with the publisher endpoints actually unavailable. This is the
 record of what was observed, including the parts that were awkward.
@@ -13,7 +13,7 @@ record of what was observed, including the parts that were awkward.
 | Endpoints blocked | `api.telltalegames.com`, `meta.telltalegames.com` → `127.0.0.1` (marked block, verified through `-Action Status`) |
 | Steam | running; the DRM gate was left untouched |
 
-## Run 1 — cold launch through the harness
+## Run 1: cold launch through the harness
 
 `tools/Test-OfflineLaunch.ps1` (elevated):
 
@@ -21,24 +21,24 @@ record of what was observed, including the parts that were awkward.
 |---|---|
 | precondition / elevation | OK, no game running, elevated |
 | save backup | `backups/20261106-050802-offline-acceptance` |
-| block | OK — both domains → `127.0.0.1` |
-| launch | OK — window `Telltale Games` appeared |
-| observe | **11 frames, remote addresses: none** — no connection to any address, blocked or otherwise, during 90 s |
+| block | OK: both domains → `127.0.0.1` |
+| launch | OK: window `Telltale Games` appeared |
+| observe | **11 frames, remote addresses: none**: no connection to any address, blocked or otherwise, during 90 s |
 | offline isolation | OK |
-| hosts rollback | OK — byte-identical to the pre-run hash |
+| hosts rollback | OK: byte-identical to the pre-run hash |
 
 The captured frames show the animated title screen reaching **`CLICK TO CONTINUE`**, with
-the banner text "For the latest information on…" — the offline fallback banner, not the
+the banner text "For the latest information on…", the offline fallback banner, not the
 live news feed.
 
 Frames: `tools/scratch/offline-20261106-110802/` (git-ignored; frames are game art).
 
-## Run 2 — offline save load, held across a fresh launch
+## Run 2: offline save load, held across a fresh launch
 
 The harness cannot play, so the save-load half was driven by hand with the block applied.
 
 1. Block re-applied and verified (`-Action Status` → `Blocked: true`, both domains).
-2. The running instance was **terminated rather than exited** — the frontend's `EXIT GAME`
+2. The running instance was **terminated rather than exited**: the frontend's `EXIT GAME`
    item did not accept clicks at this display size (tried y = 607, 620, 635, 650, 665 with
    no effect; the same failure shape as the earlier bar-coordinate problem). Saves were
    already backed up twice, and a clean exit + relaunch cycle had been observed earlier in
@@ -74,11 +74,11 @@ pre-run value. DNS resolved `api.telltalegames.com` back to its CloudFront addre
 - An **existing save loads offline**: the slot list is populated, the episode page renders,
   and the chapter loads into a live in-game scene.
 - The block is **reversible to the byte**, and the game's own network use during those runs
-  was **zero** — including the persistent API socket seen when the endpoints are reachable.
+  was **zero**: including the persistent API socket seen when the endpoints are reachable.
 
 ## What it does not establish
 
-- **Episode 1's ending and credits** — the loaded scene is Episode 1's final chapter, but it
+- **Episode 1's ending and credits**: the loaded scene is Episode 1's final chapter, but it
   was not played to the end in this run.
 - **The Episode 1 → Episode 2 transition** offline.
 - **Episodes 2–5** loading offline: they are installed but were not opened.

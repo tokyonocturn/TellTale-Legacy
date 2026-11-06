@@ -34,7 +34,7 @@ If the verdict is `blocked`, fix failures before continuing. Typical causes:
 
 | Failure | Fix |
 | --- | --- |
-| Executable/archive hash mismatch | Different build — create a new profile instead of forcing this one |
+| Executable/archive hash mismatch | Different build: create a new profile instead of forcing this one |
 | Missing episode directory | Verify the installation in Steam |
 | `StateFlags` not fully installed | Let Steam finish updating |
 | Save location not writable | Fix Documents folder permissions |

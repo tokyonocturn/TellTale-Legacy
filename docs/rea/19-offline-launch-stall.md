@@ -1,10 +1,10 @@
-# REA 19 — The offline launch wait, and the patch that removes it
+# REA 19: The offline launch wait, and the patch that removes it
 
 The symptom: on a machine with no internet route, the game asks for a connection and then
 sits there for a minute to ninety seconds before it will let anyone play.
 
 This is the record of finding out what that wait actually is, and of the patch that removes
-it. It is measured, not assumed — including the part where the first hypothesis was wrong.
+it. It is measured, not assumed, including the part where the first hypothesis was wrong.
 
 ## What was measured, and how
 
@@ -35,7 +35,7 @@ like proof and is not.
 |---|---|---|---|---|
 | A | running normally | pinned to `127.0.0.1` | **19.93 s** (title 5.08, menu 8.86, slot 12.52, page 19.93) | 2 / 1 / 1 / 2 |
 | B | running normally | unroutable `10.255.255.1` | **11.82 s** (title 1.39, menu 4.44, slot 8.16, page 11.82) | 1 / 1 / 1 / 1 |
-| C | running normally, **client and game outbound traffic blocked** | pinned | **never started** — no game process in 220 s | n/a |
+| C | running normally, **client and game outbound traffic blocked** | pinned | **never started**: no game process in 220 s | n/a |
 | D | **Offline Mode**, client and game outbound traffic blocked | pinned | **11.63 s** (title 1.37, menu 4.37, slot 8.02, page 11.63) | 1 / 1 / 1 / 1 |
 
 Reading the table:
@@ -45,7 +45,7 @@ Reading the table:
   is not the game waiting on `api.telltalegames.com` / `meta.telltalegames.com` on this
   machine.
 - **C reproduces the reported symptom.** With the Steam client cut off from the internet and
-  not in Offline Mode, the game never launched at all — Steam is where the wait is, and the
+  not in Offline Mode, the game never launched at all; Steam is where the wait is, and the
   "please connect" prompt is the client's, not the game's.
 - **D is the patch.** Same cut-off condition, but the client in Offline Mode: usable at
   11.63 s, faster than the online baseline in A.
@@ -94,7 +94,7 @@ launch wait**: condition A measured it as no faster than an unroutable address.
 ## A trap worth recording: elevation breaks input
 
 One measurement run came back with every menu click ignored. The cause was not the game: the
-Steam client had been started from an elevated shell, so Steam — and the game it launched —
+Steam client had been started from an elevated shell, so Steam (and the game it launched)
 ran at high integrity, and Windows' UIPI refuses input injection from a normal process into
 an elevated window. `Stop-Process` on that game also failed with access denied.
 
@@ -131,11 +131,11 @@ will look like "the game ignores input" when it is Windows refusing to deliver i
 
 | Item | Status |
 |---|---|
-| Steam Offline Mode removes the offline launch wait | **VERIFIED** — condition D, 11.63 s, same cut-off that produced no launch in 220 s |
-| Publisher endpoints cause the launch wait | **REFUTED** — conditions A and B both launched in ≤ 20 s |
-| Offline-mode patch is byte-reversibly removable | **VERIFIED** — unit tests, `loginusers.vdf` back to its original hash |
-| Hosts patch install/remove is byte-reversible | **VERIFIED** — unit tests, including a refusal when the file changed after install |
-| Offline launch on a machine with **no adapter at all** | **UNTESTED** — this machine was cut off at the firewall, which is the closest reversible emulation available; a physically disconnected host was not available to test |
+| Steam Offline Mode removes the offline launch wait | **VERIFIED**: condition D, 11.63 s, same cut-off that produced no launch in 220 s |
+| Publisher endpoints cause the launch wait | **REFUTED**: conditions A and B both launched in ≤ 20 s |
+| Offline-mode patch is byte-reversibly removable | **VERIFIED**: unit tests, `loginusers.vdf` back to its original hash |
+| Hosts patch install/remove is byte-reversible | **VERIFIED**: unit tests, including a refusal when the file changed after install |
+| Offline launch on a machine with **no adapter at all** | **UNTESTED**: this machine was cut off at the firewall, which is the closest reversible emulation available; a physically disconnected host was not available to test |
 
 The one honest gap: the reproduction used a scoped firewall cut rather than pulling the
 machine's network, because disconnecting the host is not something to do unilaterally. If a

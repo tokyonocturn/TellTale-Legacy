@@ -1,15 +1,15 @@
-# REA 02 — Engine and architecture
+# REA 02: Engine and architecture
 
 ## Engine identification
 
 | Component | Evidence |
 | --- | --- |
-| Engine | **Telltale Tool** — PDB path `C:\Telltale\src\alt\Engine\GameApp\GameApp.pdb` in the executable |
-| Scripting | **Lua 5.1.4** — `$Lua: Lua 5.1.4 Copyright (C) 1994-2008 Lua.org, PUC-Rio $`, plus `_boot.lua`, `_title.lua`, `Dialog.lua` and `!\\lua\\?.lua` search patterns |
-| Content containers | **TTArchive** — C++ symbols `TTArchive`, `TTArchive_File`, `FileInfo@TTArchive`, `*.ttarch` |
-| Rendering | Direct3D 9 — `d3d9.dll`, `d3dx9_41.dll`, `D3DXGetShaderVersion`, `IDirect3DSurface9`, `IDirect3DVertexDeclaration9` |
-| Audio | FMOD Ex — `fmodex.dll`, `%sFMODGetCodecDescription%s`, runtime `FMOD_Memory_GetStats` |
-| Input | DirectInput 8 — `DINPUT8.dll` |
+| Engine | **Telltale Tool**: PDB path `C:\Telltale\src\alt\Engine\GameApp\GameApp.pdb` in the executable |
+| Scripting | **Lua 5.1.4**: `$Lua: Lua 5.1.4 Copyright (C) 1994-2008 Lua.org, PUC-Rio $`, plus `_boot.lua`, `_title.lua`, `Dialog.lua` and `!\\lua\\?.lua` search patterns |
+| Content containers | **TTArchive**: C++ symbols `TTArchive`, `TTArchive_File`, `FileInfo@TTArchive`, `*.ttarch` |
+| Rendering | Direct3D 9: `d3d9.dll`, `d3dx9_41.dll`, `D3DXGetShaderVersion`, `IDirect3DSurface9`, `IDirect3DVertexDeclaration9` |
+| Audio | FMOD Ex: `fmodex.dll`, `%sFMODGetCodecDescription%s`, runtime `FMOD_Memory_GetStats` |
+| Input | DirectInput 8: `DINPUT8.dll` |
 | UI | Win32 + ATL windows (window class `ATL:013D5C38`, title `Telltale Games`) |
 | Networking | Statically linked libcurl/OpenSSL inside the executable (`WS2_32`, `WLDAP32`) |
 
@@ -60,7 +60,7 @@ Completed Chapter 8
 ```
 
 This is direct evidence for the Steamworks stat/achievement namespace. It also
-shows the same logical content mapped to PS3/Xbox/Steam ids — useful when adding
+shows the same logical content mapped to PS3/Xbox/Steam ids, useful when adding
 profiles for console-era re-releases.
 
 Most other `.prop` files in the user profile directory (for example `prefs.prop`)
@@ -82,7 +82,7 @@ is why achievement handling can be described independently of gameplay.
 
 1. The engine itself is **self-contained** in the executable plus two DLLs. No .NET,
    no Java, no external runtime that can disappear.
-2. All content is on disk in 112 archives — nothing is streamed at runtime.
+2. All content is on disk in 112 archives; nothing is streamed at runtime.
 3. The only dynamic external contract is **Steam** (DRM + stats) and the optional
    **Telltale HTTP API**.
 4. Because content is layered by directory, separate compatibility profiles per

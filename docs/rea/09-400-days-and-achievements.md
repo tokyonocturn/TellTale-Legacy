@@ -1,4 +1,4 @@
-# REA 09 — 400 Days, Steam statistics and service dependencies
+# REA 09: 400 Days, Steam statistics and service dependencies
 
 Two things are deliberately kept out of the core "playable offline" claim:
 additional content that is not installed, and platform features that need a
@@ -70,7 +70,7 @@ Known behaviour, and its honest limit:
 
 | Endpoint / service | When it is contacted | Needed to play |
 |---|---|---|
-| Steam client (licence, DRM) | Launch, always | **Yes** — this is the legitimate gate |
+| Steam client (licence, DRM) | Launch, always | **Yes**: this is the legitimate gate |
 | `api.telltalegames.com` | Splash / news fetch | No. Blocked run played normally |
 | Steam stats/achievements | On stat writes | No, for gameplay |
 | Steam Auto-Cloud | Around launches and exits | No, local saves are authoritative |

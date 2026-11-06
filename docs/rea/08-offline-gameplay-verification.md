@@ -1,4 +1,4 @@
-# REA 08 — Offline gameplay verification (M2)
+# REA 08: Offline gameplay verification (M2)
 
 This is the milestone record for "a real gameplay session can be started, saved,
 closed, restarted and resumed with the publisher API unavailable". It separates
@@ -24,7 +24,7 @@ wrapper is the legitimate gate and was never touched.
 
 ## Method and attribution
 
-- The first playthrough — new game, opening act, several checkpoints — was played
+- The first playthrough (new game, opening act, several checkpoints) was played
   by the project owner at the keyboard. It is recorded as an **attended** run.
 - Resume, exit and the second launch were driven through real mouse/keyboard
   input to the game window while the agent observed. This is UI automation of a
@@ -41,7 +41,7 @@ wrapper is the legitimate gate and was never touched.
 | 2 | PLAY, choose display style, select Episode 1, PLAY | Episode 1 loads; `prefs.prop` grows 6,647 → 6,795 |
 | 3 | Owner plays the opening act | Live gameplay; autosaves at 16:47, 16:51, 16:53 |
 | 4 | Owner exits through the in-game menu | `prefs.prop` rewritten at 16:53:40; saves stable |
-| 5 | Relaunch offline, PLAY | Slot list shows "Game 1 — Episode 1 — 05/11/26 16:53:35" |
+| 5 | Relaunch offline, PLAY | Slot list shows "Game 1 - Episode 1 - 05/11/26 16:53:35" |
 | 6 | Select slot, PLAY, CONTINUE | Checkpoint resumes into gameplay; `save_3` written; 0 TCP connections |
 | 7 | Esc → main menu → EXIT GAME → Yes | Clean process exit, no crash, no error dialog |
 | 8 | Second offline launch, same path | Slot list again, CONTINUE resumes the same checkpoint, `save_2` written; 0 TCP connections |
@@ -55,10 +55,10 @@ with the owner present.
 Session logs (`docs/rea/data/sessions/`, git-ignored because they contain local
 paths), each asserting `RemoteEndpoints: []`:
 
-- `20261105-164027-m2-gameplay-start.json` — 45 s, Steam launch, intro running
-- `20261105-170025-m2-offline-resume-1.json` — 40 s, first offline relaunch
-- `20261105-170346-m2-offline-resumed-gameplay.json` — 20 s attached to the resumed process
-- `20261105-170622-m2-offline-resume-2.json` — 25 s, second offline relaunch
+- `20261105-164027-m2-gameplay-start.json`: 45 s, Steam launch, intro running
+- `20261105-170025-m2-offline-resume-1.json`: 40 s, first offline relaunch
+- `20261105-170346-m2-offline-resumed-gameplay.json`: 20 s attached to the resumed process
+- `20261105-170622-m2-offline-resume-2.json`: 25 s, second offline relaunch
 
 Screen captures (`docs/rea/data/captures/`):
 

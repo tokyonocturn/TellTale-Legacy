@@ -23,15 +23,15 @@ launcher, a crack, or a content distribution project.
 | Executable | `WalkingDead101.exe` (x86, linked 2014-04-25) |
 | Engine | Telltale Tool, Lua 5.1.4, FMOD Ex, Direct3D 9 |
 | Content | 112 `ttarch` v9 archives, 3.55 GiB, 5 content groups |
-| Milestone 1 | **complete** — inventory, profile, offline startup verified, backup/restore verified |
-| Offline dependencies | **mapped** — one compiled-in publisher URL (`https://meta.telltalegames.com/1/`), a persistent `Established` TLS socket to `api.telltalegames.com` during play, no other endpoints. 400 Days is not installed |
-| Offline acceptance | **verified per episode** — with `api`/`meta.telltalegames.com` blocked, Episodes 2, 3, 4 and 5 each load into a live scene and take real input (movement, widgets, dialogue) at zero remote connections, and Episode 1's finale plays from an existing save. Not proven: Episode 1's credits, the ending-driven 1 → 2 transition, downstream branching. 400 Days is not installed |
-| Offline launch wait | **fixed and measured** — when the machine has no internet route the client used to leave the game unlaunched for a minute or more; with Steam in Offline Mode under the same cut-off the frontend is usable in 11.6 s (`tools/Set-SteamOfflineMode.ps1`, [doc 19](docs/rea/19-offline-launch-stall.md)) |
-| Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
-| Milestone 3 | **blocked** — offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
-| Playthrough (automated) | **partial** — the driver's two defects (26 px window/client offset, presses without a preceding mouse-move) are fixed. Episode 1's finale was then driven offline to its last scene and Episodes 2–5 were each started and advanced by injected input; Episode 1's credits and the ending-driven transition remain open ([doc 18](docs/rea/18-multiepisode-offline-run.md)) |
-| Audio verification | **re-checkable** — `tools/Assert-AudioDelivery.ps1` resolves the endpoint by device id, refuses any fallback, and returns a named verdict with a distinct exit code (`endpoint-missing`, `endpoint-inactive`, `no-signal-on-target`, `default-changed`, `mirror-not-running`). Verified during live play at 0.474 peak with the default unchanged |
-| Audio | **routed and measured** — silence was the game's own `VOICE/MUSIC/SOUND` all at 0 (now 10/10/10); the endpoint renders (direct WASAPI tone meters 0.5) but Windows ignores per-app redirection, so a loopback mirror carries the stream to `100027813`: target peaks 0.14–0.77 during dialogue and cinematics while headphones stay at their unrelated floor, across a restart and a chapter change. Default device unchanged |
+| Milestone 1 | **complete**: inventory, profile, offline startup verified, backup/restore verified |
+| Offline dependencies | **mapped**: one compiled-in publisher URL (`https://meta.telltalegames.com/1/`), a persistent `Established` TLS socket to `api.telltalegames.com` during play, no other endpoints. 400 Days is not installed |
+| Offline acceptance | **verified per episode**: with `api`/`meta.telltalegames.com` blocked, Episodes 2, 3, 4 and 5 each load into a live scene and take real input (movement, widgets, dialogue) at zero remote connections, and Episode 1's finale plays from an existing save. Not proven: Episode 1's credits, the ending-driven 1 → 2 transition, downstream branching. 400 Days is not installed |
+| Offline launch wait | **fixed and measured**: when the machine has no internet route the client used to leave the game unlaunched for a minute or more; with Steam in Offline Mode under the same cut-off the frontend is usable in 11.6 s (`tools/Set-SteamOfflineMode.ps1`, [doc 19](docs/rea/19-offline-launch-stall.md)) |
+| Milestone 2 | **complete**: real gameplay saved, closed, restarted and resumed with the publisher API blocked |
+| Milestone 3 | **blocked**: offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
+| Playthrough (automated) | **partial**: the driver's two defects (26 px window/client offset, presses without a preceding mouse-move) are fixed. Episode 1's finale was then driven offline to its last scene and Episodes 2–5 were each started and advanced by injected input; Episode 1's credits and the ending-driven transition remain open ([doc 18](docs/rea/18-multiepisode-offline-run.md)) |
+| Audio verification | **re-checkable**: `tools/Assert-AudioDelivery.ps1` resolves the endpoint by device id, refuses any fallback, and returns a named verdict with a distinct exit code (`endpoint-missing`, `endpoint-inactive`, `no-signal-on-target`, `default-changed`, `mirror-not-running`). Verified during live play at 0.474 peak with the default unchanged |
+| Audio | **routed and measured**: silence was the game's own `VOICE/MUSIC/SOUND` all at 0 (now 10/10/10); the endpoint renders (direct WASAPI tone meters 0.5) but Windows ignores per-app redirection, so a loopback mirror carries the stream to `100027813`: target peaks 0.14–0.77 during dialogue and cinematics while headphones stay at their unrelated floor, across a restart and a chapter change. Default device unchanged |
 
 Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [engine architecture](docs/rea/02-engine-and-architecture.md),
@@ -55,7 +55,7 @@ Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 
 ## What was actually verified
 
-Not claims — measured on the installed build, with logs:
+Not claims, measured on the installed build, with logs:
 
 * **Offline startup works.** With the game's only publisher endpoint
   (`api.telltalegames.com`) blackholed, a Steam-launched session reached the main
@@ -73,8 +73,8 @@ Not claims — measured on the installed build, with logs:
 * **Backup and restore are hash-verified end to end**, including tamper rejection
   and non-destructive pre-restore snapshots.
 * **A real session survives offline.** Ep1 was played under the API block, wrote
-  `save_1/5/6.save` plus `prefs.prop`, exited cleanly, and then — twice — the game
-  listed the slot as `Game 1 — Episode 1 — 05/11/26 16:53:35`, resumed the saved
+  `save_1/5/6.save` plus `prefs.prop`, exited cleanly, and then, twice, the game
+  listed the slot as `Game 1 - Episode 1 - 05/11/26 16:53:35`, resumed the saved
   checkpoint on CONTINUE, and held **zero TCP connections** throughout. See
   [docs/rea/08-offline-gameplay-verification.md](docs/rea/08-offline-gameplay-verification.md).
 * **The game's audio reaches `100027813` by measurement.** A loopback mirror
@@ -167,7 +167,7 @@ See [docs/installation.md](docs/installation.md) for prerequisites and details.
 1. **Steam is the gate, not Telltale.** The executable carries a `.bind` section
    (Steam DRM stub) and imports `steam_api.dll` (`SteamClient012`/`SteamUser016`).
    Legitimate offline play therefore means Steam Offline Mode with a cached
-   licence — not a patched binary.
+   licence, not a patched binary.
 2. **The Telltale account API is optional at startup.** It is contacted during the
    splash, but the game still reaches the main menu when it is unreachable. Only
    live news and episode-status information degrade.
@@ -175,7 +175,7 @@ See [docs/installation.md](docs/installation.md) for prerequisites and details.
    (`com.telltalegames.<episode>.ch.<NN>`) cannot unlock while Steam is offline;
    gameplay and saves are unaffected.
 4. **Saves are local and small, but not readable.** State lives in the per-user
-   Documents folder, so it is easy to protect, diff and restore — and easy to lose
+   Documents folder, so it is easy to protect, diff and restore, and easy to lose
    if a reinstall or a profile change happens without a backup. The files are
    obfuscated, so tooling protects them as opaque bytes and does not pretend to
    interpret decisions.
@@ -185,14 +185,14 @@ See [docs/installation.md](docs/installation.md) for prerequisites and details.
 
 ## Roadmap
 
-* Milestone 3 — Episode 1 completion and the Episode 2 transition offline; blocked
+* Milestone 3: Episode 1 completion and the Episode 2 transition offline; blocked
   on an attended playthrough because the game has no chapter select (see
   [the transition analysis](docs/rea/10-episode-transition.md)). Also pending: a
   full machine-offline run with Steam itself in Offline Mode.
-* Milestone 4 — save-container research (keystream/compression identification) so
+* Milestone 4: save-container research (keystream/compression identification) so
   decisions can be verified by content rather than behaviour, without extracting
   assets.
-* Later — Season 2, 400 Days, and the Definitive Series as **separate** profiles;
+* Later: Season 2, 400 Days, and the Definitive Series as **separate** profiles;
   the engine is shared but content layout and DRM differ.
 
 ## Legal

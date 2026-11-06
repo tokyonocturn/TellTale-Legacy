@@ -1,4 +1,4 @@
-# REA 15 — Offline dependency map (Phase 1)
+# REA 15: Offline dependency map (Phase 1)
 
 What the installed game actually needs from the network, established from the shipped
 files and from a live session that was observed without being touched. Every claim below
@@ -26,7 +26,7 @@ closed. Connection sampling is read-only.
 |---|---|
 | `https://meta.telltalegames.com/1/` | the only publisher URL compiled into the executable; a versioned metadata/config service |
 | `www.telltalegames.com` | appears once, alongside certificate/README boilerplate from bundled OpenSSL |
-| `www.verisign.com`, `ocsp/crl.verisign.com`, `www.openssl.org`, `www.lua.org` | library boilerplate baked into the embedded TLS/zlib/Lua builds — **not** endpoints this game calls |
+| `www.verisign.com`, `ocsp/crl.verisign.com`, `www.openssl.org`, `www.lua.org` | library boilerplate baked into the embedded TLS/zlib/Lua builds; **not** endpoints this game calls |
 
 There is **no** `api.telltalegames.com` literal in the executable, so that host is either
 composed at runtime or supplied by the metadata service. It is nonetheless the host the
@@ -37,8 +37,8 @@ running game talks to.
 | Remote address | Held | Attribution |
 |---|---|---|
 | `18.245.113.119:443` | **12 / 12 samples**, state `Established` | `api.telltalegames.com` → `18.245.113.61/.77/.118/.119` (CloudFront, `server-18-245-113-119.dfw57.r.cloudfront.net`) |
-| — | never seen | `meta.telltalegames.com` → `108.156.245.57/.85/.96/.120`, a different CloudFront distribution |
-| — | never seen | `www.telltalegames.com` → `184.32.29.238` and others |
+| - | never seen | `meta.telltalegames.com` → `108.156.245.57/.85/.96/.120`, a different CloudFront distribution |
+| - | never seen | `www.telltalegames.com` → `184.32.29.238` and others |
 
 So during play the game keeps a **persistent TLS connection to the API host**, and the one
 URL compiled into it is not the one it uses. Whether the connection carries anything the
@@ -48,10 +48,10 @@ game needs is a separate question, and the answer has to come from running witho
 
 | Dependency | Role | Verdict |
 |---|---|---|
-| `api.telltalegames.com` | long-lived socket during play; presumably stats/season state | **unknown-but-suspicious** — the offline launch must decide it |
-| `meta.telltalegames.com` | compiled-in metadata URL; not contacted during the observed window | **optional or startup-only** — needs a cold-launch test |
-| `www.telltalegames.com` | one literal next to cert boilerplate | **obsolete** — no observed use |
-| Steam (`steam_api.dll`) | DRM/ownership gate and overlay | **essential and legitimate** — must keep working; the project never bypasses it |
+| `api.telltalegames.com` | long-lived socket during play; presumably stats/season state | **unknown-but-suspicious**: the offline launch must decide it |
+| `meta.telltalegames.com` | compiled-in metadata URL; not contacted during the observed window | **optional or startup-only**: needs a cold-launch test |
+| `www.telltalegames.com` | one literal next to cert boilerplate | **obsolete**: no observed use |
+| Steam (`steam_api.dll`) | DRM/ownership gate and overlay | **essential and legitimate**: must keep working; the project never bypasses it |
 | Local archives | episodes and their assets | **essential, already local** |
 
 ## Local content coverage
@@ -80,7 +80,7 @@ DLC depot in the manifest. It therefore cannot be tested on this machine and is 
 The earlier record in `12-gameplay-automation.md` left open whether the stalled chapter was
 an online dependency. It was not:
 
-- The stall reproduced while `api.telltalegames.com` was **reachable and connected** — the
+- The stall reproduced while `api.telltalegames.com` was **reachable and connected**: the
   established socket above was present during it.
 - The cause was the input driver's two defects (26 px window/client offset; presses sent
   without a preceding mouse-move event), fixed in `46efac2`.
