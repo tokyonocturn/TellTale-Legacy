@@ -144,10 +144,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-SaveArtifacts.ps1 
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\Set-SteamOfflineMode.ps1 -Action Enable
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\Set-SteamOfflineMode.ps1 -Action Disable
 
-# 5. Is every episode's content really installed?
+# 6. Is every episode's content really installed?
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\Test-ContentPacks.ps1
 
-# 6. Run the test suite
+# 7. Run the test suite
 powershell -NoProfile -ExecutionPolicy Bypass -File tests\Run-Tests.ps1
 ```
 
