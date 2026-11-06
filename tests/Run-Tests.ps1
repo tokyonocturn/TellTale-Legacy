@@ -653,6 +653,29 @@ try {
             Assert-True ($first.Peak -ge 0 -and $first.Peak -le 1) 'peak out of range'
         }
     }
+    Test-Case 'Routing helper matches a unique device name only' {
+        . (Join-Path $tools 'Set-AppAudioRoute.ps1')
+        $names = @(
+            'Default'
+            'Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO)'
+            '100027813 (NVIDIA High Definition Audio)'
+            'Speakers (Yeti Classic)'
+        )
+        $matched = @(Find-MatchingItem -Names $names -Pattern '100027813')
+        Assert-Equal 1 $matched.Count 'a single device should match'
+        Assert-Equal '100027813 (NVIDIA High Definition Audio)' $matched[0] 'wrong device matched'
+    }
+
+    Test-Case 'Routing helper reports every duplicate so the caller can refuse' {
+        . (Join-Path $tools 'Set-AppAudioRoute.ps1')
+        $names = @(
+            '100027813 (NVIDIA High Definition Audio)'
+            '100027813 (NVIDIA High Definition Audio)'
+            'Default'
+        )
+        $matched = @(Find-MatchingItem -Names $names -Pattern '100027813')
+        Assert-Equal 2 $matched.Count 'both duplicates must be reported, never one silently chosen'
+    }
 }
 finally {
     if (Test-Path -LiteralPath $script:sandbox) {

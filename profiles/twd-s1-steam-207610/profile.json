@@ -233,20 +233,23 @@
     "routingApplied": false,
     "verificationTool": "tools/Get-AudioRoute.ps1",
     "baselineMeasurement": "Tone played through the default reached Voicemeeter AUX Input (peak 0.377) and Headphones (3- E7 Stereo) (peak 0.382); target peak remained 0.",
-    "blocker": "Per-app routing is not applied and cannot be verified yet: synthetic PolicyConfig entries are ignored, the undocumented routing factory was declined to protect the 700 existing mappings, and the game currently emits no audio (its SOUND volume is 0 and the menu has no music) while the slot-list PLAY button refuses synthesised input, so gameplay audio cannot be reached to measure. Routing plus the in-game SOUND setting are one manual step each; both are documented with the exact click-path.",
+    "blocker": "Per-app routing cannot be applied on this machine: the supported Settings page accepts and persists the per-app output selection, but Windows never moves any session to it - measured for the game and for a control tone routed to 100027813, SHARP HDMI and the known-good Headphones endpoint. The target endpoint is enumerated ACTIVE yet never receives audio (peak stays 0). Synthetic policy entries are ignored and the undocumented routing factory remains excluded, so routing stays unproven and the manual click-path is documented for a machine where the override is honoured.",
     "verified": [
       "endpoint identification and rejection of three stale same-named endpoints",
-      "peak-meter and per-session instrumentation (process attribution)",
-      "baseline: target receives no audio, default carries other applications",
-      "game session is active but silent (peak 0, volume 1, not muted) with the window foreground",
-      "game audio settings: SOUND 0, MUSIC 10, VOICE 10",
-      "machine restored: 700 policy entries, identical hash, default unchanged"
+      "only one 100027813 item is offered by the Settings page output lists",
+      "peak-meter and per-session instrumentation with process attribution",
+      "game audio measured at peak 0.050720 on the default endpoint once SOUND was raised",
+      "UIA selection accepted, persisted, and read back across a game restart",
+      "the override is not applied, proven against a control process and three devices",
+      "policy store unchanged: 700 entries, identical hash, empty per-value diff",
+      "default render endpoint still Voicemeeter AUX Input",
+      "in-game audio settings and game process restored"
     ],
     "unverified": [
       "game audio routed to 100027813",
       "dialogue/music/sfx/cinematics on that endpoint",
-      "persistence across restart",
-      "persistence across an episode transition (no gameplay yet)",
+      "persistence across restart (cannot be shown for a routing never applied)",
+      "persistence across an episode transition (no transition exercised)",
       "human audibility of the HDMI sink"
     ],
     "documentation": "docs/rea/11-audio-routing.md",
@@ -263,18 +266,44 @@
       "note": "Read from the in-game SETTINGS > AUDIO screen. SOUND=0 silences effects; the menu carries no music, so the game produced no measurable audio in any reachable state."
     },
     "gameAudioMeasurement": {
-      "result": "no measurable game audio",
-      "detail": "WalkingDead101 held an active session on the default endpoint with peak 0.000000, volume 1.0, not muted, while the window was verified foreground for 18s and during launch cinematics. Other applications carried the audio on the machine.",
-      "gameplayEntered": false,
-      "gameplayBlocker": "The slot-list PLAY button did not accept synthesised input (SendInput, repeated clicks, Enter) while the same mechanism drove splash, menu, EPISODE STATUS and row selection."
+      "result": "game audio measured on the default endpoint",
+      "detail": "With in-game SOUND raised for the test, the game own session (pid 15380) reported State=Active and Peak=0.050720 on Voicemeeter AUX Input while the window was in the foreground. The target endpoint stayed at Peak 0.",
+      "blockerResolved": "The earlier silence was the game own SOUND=0 setting next to a menu with no music, not an audio failure.",
+      "restoredSettings": {
+        "voice": 10,
+        "music": 10,
+        "sound": 0
+      }
     },
     "machineStateAfterSession": {
       "policyEntryCount": 700,
       "policyHashBefore": "630B71A532AA250A28A8148FE157978A9145661CBEB253C6EB9F49E6A9126875",
       "policyHashAfter": "630B71A532AA250A28A8148FE157978A9145661CBEB253C6EB9F49E6A9126875",
+      "perValueDiff": "empty",
       "defaultEndpointUnchanged": true,
-      "gameProcessClosed": true,
-      "note": "No routing change was left half-applied."
-    }
+      "settingsAppRow": "Default (reverted and read back)",
+      "inGameAudioSettings": "restored to VOICE 10 / MUSIC 10 / SOUND 0",
+      "gameProcessClosed": true
+    },
+    "gameAudioMeasured": true,
+    "routingAttempts": [
+      {
+        "route": "Settings page driven by UI Automation",
+        "tools": [
+          "tools/Set-AppAudioRoute.ps1"
+        ],
+        "automationIds": [
+          "SystemSettings_Audio_Mixer_App<PID>_ComboBox",
+          "SystemSettings_Audio_Mixer_App<PID>_Slider",
+          "SystemSettings_Audio_OutputList_ComboBox"
+        ],
+        "selectionAccepted": true,
+        "selectionPersistedAcrossRestart": true,
+        "honoredByWindows": false,
+        "evidence": "The game session stayed on Voicemeeter AUX (peak 0.029694) with the target at 0. A control SoundPlayer tone could not be moved to Headphones (3- E7 Stereo) or SHARP HDMI either, including from processes started after the setting was stored.",
+        "policyStoreChanged": false,
+        "conclusion": "The per-app override is stored by the page but not applied by the audio stack on this machine. Routing to 100027813 is not achievable through this route."
+      }
+    ]
   }
 }
