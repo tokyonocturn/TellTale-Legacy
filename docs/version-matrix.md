@@ -36,6 +36,8 @@ Full hashes are in `profiles/twd-s1-steam-207610/profile.json`.
 | Achievements offline | expected unavailable (Steam stats) | static analysis only |
 | 400 Days | **not applicable** — content not installed | `09-400-days-and-achievements.md` |
 | Full Steam Offline Mode run | **not tested** | — |
+| Audio endpoint `100027813` | **identified** (`{63b45a0d-…}`), 3 of 4 same-named devices stale | `11-audio-routing.md` |
+| Game audio on `100027813` | **not routed / not verified** | `11-audio-routing.md` |
 
 ## Builds identified but not investigated
 

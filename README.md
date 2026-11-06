@@ -26,6 +26,7 @@ launcher, a crack, or a content distribution project.
 | Milestone 1 | **complete** — inventory, profile, offline startup verified, backup/restore verified |
 | Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
 | Milestone 3 | **blocked** — offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
+| Audio | **identified, not routed** — endpoint `100027813` resolved to `{63b45a0d-…}` with a peak-meter probe; per-app routing awaits one Windows setting |
 
 Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [engine architecture](docs/rea/02-engine-and-architecture.md),

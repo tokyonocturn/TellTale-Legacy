@@ -217,5 +217,34 @@
     "baselineBackup": "backups/20261105-173230-m3-baseline",
     "progressionBaseline": "docs/rea/data/save-progress-m3-baseline.json",
     "documentation": "docs/rea/10-episode-transition.md"
+  },
+  "audio": {
+    "requiredEndpointName": "100027813",
+    "resolvedEndpoint": {
+      "friendlyName": "100027813 (NVIDIA High Definition Audio)",
+      "endpointId": "{0.0.0.00000000}.{63b45a0d-a22d-42a4-a438-b64a52829507}",
+      "pnpInstanceId": "SWD\\MMDEVAPI\\{0.0.0.00000000}.{63B45A0D-A22D-42A4-A438-B64A52829507}",
+      "state": "active",
+      "isRenderDefault": false,
+      "deviceInterfacePath": "{2}.\\\\?\\hdaudio#func_01&ven_10de&dev_009f&subsys_104388a8&rev_1001#5&2b74da90&0&0001#{6994ad04-93ef-11d0-a3cc-00a0c9223196}\\topo00"
+    },
+    "ambiguity": "Four enumerated devices carry the name '100027813'; three are not present and only {63b45a0d-...} is active. Resolution reports the id and state rather than binding by name.",
+    "currentDefaultEndpoint": "Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO)",
+    "routingApplied": false,
+    "verificationTool": "tools/Get-AudioRoute.ps1",
+    "baselineMeasurement": "Tone played through the default reached Voicemeeter AUX Input (peak 0.377) and Headphones (3- E7 Stereo) (peak 0.382); target peak remained 0.",
+    "blocker": "Per-app routing was not applied: synthetic PolicyConfig entries are ignored by Windows and the key derivation is unrecovered across 700 samples; the undocumented IAudioPolicyConfigFactory was declined because a mis-indexed call could clear all 700 existing per-app mappings. The supported Windows per-app device setting remains a one-step manual action.",
+    "verified": [
+      "endpoint identification and ambiguity",
+      "peak-meter verification instrument",
+      "baseline: target receives no audio"
+    ],
+    "unverified": [
+      "game audio routed to 100027813",
+      "dialogue/music/sfx/cinematics on that endpoint",
+      "persistence across restart and episode transition",
+      "human audibility of the HDMI sink"
+    ],
+    "documentation": "docs/rea/11-audio-routing.md"
   }
 }
