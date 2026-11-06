@@ -948,6 +948,186 @@ try {
         )
         Assert-Equal 20 $result.ExitCode 'a file without the values must be refused'
     }
+
+    Write-Host ''
+    Write-Host 'Offline launch patch'
+
+    $hostsPatchRoot = Join-Path $script:sandbox 'hosts-patch'
+    New-Item -ItemType Directory -Path $hostsPatchRoot -Force | Out-Null
+
+    Test-Case 'Offline launch patch install/remove is byte-reversible' {
+        $hostsFixture = Join-Path $hostsPatchRoot 'hosts-roundtrip.txt'
+        Set-Content -LiteralPath $hostsFixture -Value "# normal hosts file`r`n127.0.0.1 localhost`r`n" -NoNewline
+        $before = (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash
+        $manifest = Join-Path $hostsPatchRoot 'roundtrip-manifest.json'
+
+        $install = Invoke-Script -ScriptPath (Join-Path $tools 'Set-OfflineLaunchPatch.ps1') -ScriptArguments @(
+            '-Action', 'Install', '-HostsPath', $hostsFixture, '-ManifestPath', $manifest,
+            '-SkipElevationCheck', '-SkipDnsFlush', '-SkipResolveCheck'
+        )
+        Assert-Equal 0 $install.ExitCode ("install exit code: " + $install.StdErr)
+        Assert-True ((Get-Content -LiteralPath $hostsFixture -Raw) -match '127\.0\.0\.1\s+api\.telltalegames\.com') 'install must pin the endpoint'
+
+        $remove = Invoke-Script -ScriptPath (Join-Path $tools 'Set-OfflineLaunchPatch.ps1') -ScriptArguments @(
+            '-Action', 'Remove', '-HostsPath', $hostsFixture, '-ManifestPath', $manifest,
+            '-SkipElevationCheck', '-SkipDnsFlush', '-SkipResolveCheck'
+        )
+        Assert-Equal 0 $remove.ExitCode ("remove exit code: " + $remove.StdErr)
+        Assert-Equal $before (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash 'remove must restore the original hosts bytes'
+    }
+
+    Test-Case 'Offline launch patch refuses to revert a file changed after install' {
+        $hostsFixture = Join-Path $hostsPatchRoot 'hosts-drift.txt'
+        Set-Content -LiteralPath $hostsFixture -Value "# normal hosts file`r`n127.0.0.1 localhost`r`n" -NoNewline
+        $manifest = Join-Path $hostsPatchRoot 'drift-manifest.json'
+        $install = Invoke-Script -ScriptPath (Join-Path $tools 'Set-OfflineLaunchPatch.ps1') -ScriptArguments @(
+            '-Action', 'Install', '-HostsPath', $hostsFixture, '-ManifestPath', $manifest,
+            '-SkipElevationCheck', '-SkipDnsFlush', '-SkipResolveCheck'
+        )
+        Assert-Equal 0 $install.ExitCode ("install exit code: " + $install.StdErr)
+
+        # Someone else edits the pre-patch region after the install: the revert must refuse,
+        # not truncate their change away.
+        $current = [System.IO.File]::ReadAllText($hostsFixture)
+        [System.IO.File]::WriteAllText($hostsFixture, $current.Replace('# normal hosts file', '# edited after install'))
+        $remove = Invoke-Script -ScriptPath (Join-Path $tools 'Set-OfflineLaunchPatch.ps1') -ScriptArguments @(
+            '-Action', 'Remove', '-HostsPath', $hostsFixture, '-ManifestPath', $manifest,
+            '-SkipElevationCheck', '-SkipDnsFlush', '-SkipResolveCheck'
+        )
+        Assert-Equal 21 $remove.ExitCode 'a changed hosts file must be refused rather than truncated'
+    }
+
+    Write-Host ''
+    Write-Host 'Per-game offline patches'
+
+    $gamePatchRoot = Join-Path $script:sandbox 'game-patch'
+    New-Item -ItemType Directory -Path $gamePatchRoot -Force | Out-Null
+    $gamePatchState = Join-Path $gamePatchRoot 'state'
+    $gamePatchManifest = Join-Path $gamePatchRoot 'manifest.json'
+
+    function New-GamePatchFixture {
+        param(
+            [Parameter(Mandatory)][string]$Id,
+            [string[]]$Endpoints = @('services.telltalegames.com'),
+            [switch]$NoEndpoints
+        )
+
+        $gameRoot = Join-Path $gamePatchRoot $Id
+        New-Item -ItemType Directory -Path $gameRoot -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $gameRoot 'game.exe') -Value ('fixture-' + $Id) -NoNewline
+        $hash = (Get-FileHash -LiteralPath (Join-Path $gameRoot 'game.exe') -Algorithm SHA256).Hash
+        $patch = [ordered]@{ tag = ($Id + '-v1'); endpoints = @($Endpoints); launchVerification = 'UNTESTED' }
+        if ($NoEndpoints) { $patch['endpoints'] = @() }
+        $profile = [ordered]@{
+            schemaVersion   = 1
+            id              = $Id
+            steamAppId      = 777777
+            steamBuildId    = '1'
+            executable      = 'game.exe'
+            knownGoodHashes = [ordered]@{ 'game.exe' = $hash }
+            offlinePatch    = $patch
+        }
+        $profilePath = Join-Path $gamePatchRoot ($Id + '.json')
+        $profile | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $profilePath -Encoding UTF8
+        [pscustomobject]@{ Id = $Id; GameRoot = $gameRoot; ProfilePath = $profilePath; Hash = $hash }
+    }
+
+    function Invoke-GamePatch {
+        param([Parameter(Mandatory)]$Fixture, [Parameter(Mandatory)][string]$Action, [string]$HostsPath, [string]$ManifestPath)
+
+        Invoke-Script -ScriptPath (Join-Path $tools 'Set-GameOfflinePatch.ps1') -ScriptArguments @(
+            '-Game', $Fixture.Id, '-ProfilePath', $Fixture.ProfilePath, '-GameRoot', $Fixture.GameRoot, '-Action', $Action,
+            '-SkipSteamOfflineMode', '-SkipElevationCheck', '-SkipDnsFlush', '-SkipResolveCheck',
+            '-HostsPath', $HostsPath, '-ManifestPath', $ManifestPath, '-StateDirectory', $gamePatchState
+        )
+    }
+
+    Test-Case 'Every game profile is valid and self-consistent' {
+        $directories = @(Get-ChildItem -LiteralPath (Join-Path $repoRoot 'profiles') -Directory)
+        Assert-True ($directories.Count -ge 6) 'expected the Season 1 profile plus one per other game'
+        $seen = New-Object System.Collections.Generic.List[string]
+        foreach ($directory in $directories) {
+            $path = Join-Path $directory.FullName 'profile.json'
+            Assert-True (Test-Path -LiteralPath $path) ('missing profile: ' + $directory.Name)
+            $p = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+            Assert-Equal 1 $p.schemaVersion ('schemaVersion in ' + $directory.Name)
+            Assert-Equal $directory.Name $p.id ('the profile id must match its directory: ' + $directory.Name)
+            Assert-True (-not $seen.Contains([string]$p.id)) ('duplicate profile id: ' + $p.id)
+            $seen.Add([string]$p.id)
+            if ($p.status -eq 'blocked-not-installed') {
+                Assert-Equal 0 @($p.offlinePatch.endpoints).Count ('an app that is not installed must not claim endpoints: ' + $p.id)
+                continue
+            }
+            Assert-True (@($p.offlinePatch.endpoints).Count -ge 1) ('no endpoints recorded: ' + $p.id)
+            Assert-True ([bool]$p.offlinePatch.tag) ('no patch tag recorded: ' + $p.id)
+            Assert-True ($p.knownGoodHashes.PSObject.Properties.Name -contains $p.executable) ('no recorded hash for ' + $p.executable)
+        }
+    }
+
+    Test-Case 'Game patch status reports a matching build without touching anything' {
+        $fixture = New-GamePatchFixture -Id 'fixture-status'
+        $hostsFixture = Join-Path $gamePatchRoot 'hosts-status.txt'
+        Set-Content -LiteralPath $hostsFixture -Value "# untouched`r`n" -NoNewline
+        $before = (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash
+        $result = Invoke-GamePatch -Fixture $fixture -Action 'Status' -HostsPath $hostsFixture -ManifestPath $gamePatchManifest
+        Assert-Equal 0 $result.ExitCode ("status exit code: " + $result.StdErr)
+        Assert-True ($result.StdOut -match 'BuildMatches\s*:\s*True') 'status must confirm the recorded build'
+        Assert-True ($result.StdOut -match 'LaunchVerification\s*:\s*UNTESTED') 'status must not claim a launch that was not measured'
+        Assert-Equal $before (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash 'status must not modify the hosts file'
+    }
+
+    Test-Case 'Game patch refuses a build it was not written for' {
+        $fixture = New-GamePatchFixture -Id 'fixture-other-build'
+        Set-Content -LiteralPath (Join-Path $fixture.GameRoot 'game.exe') -Value 'a different build' -NoNewline
+        $hostsFixture = Join-Path $gamePatchRoot 'hosts-other-build.txt'
+        Set-Content -LiteralPath $hostsFixture -Value "# untouched`r`n" -NoNewline
+        $result = Invoke-GamePatch -Fixture $fixture -Action 'Install' -HostsPath $hostsFixture -ManifestPath $gamePatchManifest
+        Assert-Equal 24 $result.ExitCode 'a mismatched executable must be refused'
+        Assert-True ((Get-Content -LiteralPath $hostsFixture -Raw) -notmatch 'telltalegames') 'a refusal must not pin anything'
+    }
+
+    Test-Case 'Game patch merges games and unpins only its own endpoints' {
+        $hostsFixture = Join-Path $gamePatchRoot 'hosts-merge.txt'
+        Set-Content -LiteralPath $hostsFixture -Value "# normal hosts file`r`n127.0.0.1 localhost`r`n" -NoNewline
+        $original = (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash
+        $manifest = Join-Path $gamePatchRoot 'merge-manifest.json'
+        $first = New-GamePatchFixture -Id 'fixture-merge-a' -Endpoints @('services.telltalegames.com')
+        $second = New-GamePatchFixture -Id 'fixture-merge-b' -Endpoints @('api.example-telltale.test')
+
+        $installA = Invoke-GamePatch -Fixture $first -Action 'Install' -HostsPath $hostsFixture -ManifestPath $manifest
+        Assert-Equal 0 $installA.ExitCode ("install A exit code: " + $installA.StdErr)
+        $installB = Invoke-GamePatch -Fixture $second -Action 'Install' -HostsPath $hostsFixture -ManifestPath $manifest
+        Assert-Equal 0 $installB.ExitCode ("install B exit code: " + $installB.StdErr)
+        $text = Get-Content -LiteralPath $hostsFixture -Raw
+        Assert-True ($text -match 'services\.telltalegames\.com') 'the first game must stay pinned'
+        Assert-True ($text -match 'api\.example-telltale\.test') 'the second game must be pinned too'
+
+        $removeA = Invoke-GamePatch -Fixture $first -Action 'Remove' -HostsPath $hostsFixture -ManifestPath $manifest
+        Assert-Equal 0 $removeA.ExitCode ("remove A exit code: " + $removeA.StdErr)
+        $text = Get-Content -LiteralPath $hostsFixture -Raw
+        Assert-True ($text -notmatch 'services\.telltalegames\.com') 'removing one game must drop its endpoint'
+        Assert-True ($text -match 'api\.example-telltale\.test') 'removing one game must not drop another game endpoint'
+
+        $removeB = Invoke-GamePatch -Fixture $second -Action 'Remove' -HostsPath $hostsFixture -ManifestPath $manifest
+        Assert-Equal 0 $removeB.ExitCode ("remove B exit code: " + $removeB.StdErr)
+        Assert-Equal $original (Get-FileHash -LiteralPath $hostsFixture -Algorithm SHA256).Hash 'the last removal must restore the original bytes'
+    }
+
+    Test-Case 'Game patch refuses a profile with no endpoints' {
+        $fixture = New-GamePatchFixture -Id 'fixture-no-endpoints' -NoEndpoints
+        $hostsFixture = Join-Path $gamePatchRoot 'hosts-no-endpoints.txt'
+        Set-Content -LiteralPath $hostsFixture -Value "# untouched`r`n" -NoNewline
+        $result = Invoke-GamePatch -Fixture $fixture -Action 'Install' -HostsPath $hostsFixture -ManifestPath $gamePatchManifest
+        Assert-Equal 21 $result.ExitCode 'a patch without a pin target must be refused'
+    }
+
+    Test-Case 'Game patch reports nothing to remove for an unrecorded game' {
+        $fixture = New-GamePatchFixture -Id 'fixture-never-installed'
+        $hostsFixture = Join-Path $gamePatchRoot 'hosts-never-installed.txt'
+        Set-Content -LiteralPath $hostsFixture -Value "# untouched`r`n" -NoNewline
+        $result = Invoke-GamePatch -Fixture $fixture -Action 'Remove' -HostsPath $hostsFixture -ManifestPath $gamePatchManifest
+        Assert-Equal 26 $result.ExitCode 'removing a patch that was never installed must be refused'
+    }
 }
 finally {
     if (Test-Path -LiteralPath $script:sandbox) {

@@ -99,11 +99,47 @@ playthrough), 400 Days (content not installed), achievement unlocks with Steam
 offline, the semantic content of persisted choices, a full Steam Offline Mode
 session, and any release other than this Steam build.
 
+## Offline launch patch, per game
+
+One patch entry point, one profile per game. Each patch puts Steam in Offline Mode so an
+offline launch does not wait for a connection that is not there, and pins that build's
+publisher endpoint to loopback so a blocked startup call fails immediately instead of timing
+out. Both steps revert byte-for-byte, and a build whose executable hash does not match the
+profile is refused rather than patched.
+
+| Game | App id | Build | Profile | Tag | Launch measured |
+|---|---|---|---|---|---|
+| Season 1 | 207610 | 244978 | `twd-s1-steam-207610` | `twd-s1-v1.0.0` | **verified**, 11.63 s |
+| Season Two | 261030 | 1298753 | `twd-s2-steam-261030` | `twd-s2-v1.0.0` | not yet measured |
+| A New Frontier | 536220 | 2784143 | `twd-s3-steam-536220` | `twd-s3-v1.0.0` | not yet measured |
+| Michonne | 429570 | 1094475 | `twd-michonne-steam-429570` | `twd-michonne-v1.0.0` | not yet measured |
+| The Final Season | 866800 | 3679591 | `twd-s4-steam-866800` | `twd-s4-v1.0.0` | not yet measured |
+| Definitive Series | 1449690 | not installed | `twd-definitive-steam-1449690` | none | blocked: no build on disk |
+
+```powershell
+# read-only: install present, build hash match, endpoint pins, client mode
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Set-GameOfflinePatch.ps1 -Game twd-s2-steam-261030 -Action Status
+
+# apply / revert one game (both need an elevated shell)
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Set-GameOfflinePatch.ps1 -Game twd-s2-steam-261030 -Action Install
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Set-GameOfflinePatch.ps1 -Game twd-s2-steam-261030 -Action Remove
+```
+
+The endpoint each build contacts was read from its own executable, not assumed: Seasons 2 to
+4 and Michonne use `services.telltalegames.com`, while Season 1 uses `api` and
+`meta.telltalegames.com`. Details, including what is measured and what is not, are in
+[docs/rea/20-other-games-offline-patch.md](docs/rea/20-other-games-offline-patch.md).
+
 ## Repository layout
 
 ```
 profiles/                 Version-specific compatibility profiles (facts + expectations)
   twd-s1-steam-207610/
+  twd-s2-steam-261030/
+  twd-s3-steam-536220/
+  twd-michonne-steam-429570/
+  twd-s4-steam-866800/
+  twd-definitive-steam-1449690/
 tools/                    Preservation tooling (PowerShell 5.1, no external dependencies)
   Get-GameInventory.ps1   Read-only forensic inventory: hashes, PE, archive headers
   Test-OfflineReadiness.ps1  Audits an install against a profile
@@ -115,6 +151,7 @@ tools/                    Preservation tooling (PowerShell 5.1, no external depe
   Test-ContentPacks.ps1   Verifies every profile episode has archives on disk
   Set-SteamOfflineMode.ps1  Puts Steam in Offline Mode so an offline launch does not wait
   Set-OfflineLaunchPatch.ps1  Pins the publisher hostnames to loopback (byte-reversible)
+  Set-GameOfflinePatch.ps1  Applies, reports or reverts one game's patch after a build check
   Measure-LaunchLatency.ps1  Times a launch to a usable frontend by driving it
   classify_frame.py       Frame measurement helper used by the latency instrument
 tests/                    Automated tests for the tooling (synthetic fixtures)

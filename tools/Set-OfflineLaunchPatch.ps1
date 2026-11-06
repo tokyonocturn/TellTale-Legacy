@@ -21,9 +21,18 @@
     byte-identical rather than "close enough".
 
 .PARAMETER Action
-    Install  add the marked block (elevated).
-    Remove   truncate the hosts file back to its recorded pre-patch bytes (elevated).
-    Status   report state, needing no elevation.
+    Install        add the marked block (elevated).
+    Remove         truncate the hosts file back to its recorded pre-patch bytes (elevated).
+    RemoveDomains  drop only the listed hostnames from the block, leaving the rest (elevated).
+    Status         report state, needing no elevation.
+
+.PARAMETER Merge
+    On Install, keep the hostnames already in the marked block and add the listed ones
+    rather than replacing the block. Several games share one hosts file, so each game's
+    patch adds its own endpoints without evicting another game's.
+
+.PARAMETER AsJson
+    Emit Status as JSON, so callers can compose it instead of parsing text.
 
 .PARAMETER Domains
     Hostnames to pin. Defaults to the endpoints the REA map names.
@@ -55,10 +64,12 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Install', 'Remove', 'Status')][string]$Action = 'Status',
+    [ValidateSet('Install', 'Remove', 'RemoveDomains', 'Status')][string]$Action = 'Status',
     [string[]]$Domains = @('api.telltalegames.com', 'meta.telltalegames.com'),
     [string]$HostsPath = (Join-Path $env:SystemRoot 'System32\drivers\etc\hosts'),
     [string]$ManifestPath = '',
+    [switch]$Merge,
+    [switch]$AsJson,
     [switch]$SkipDnsFlush,
     [switch]$SkipResolveCheck,
     [switch]$SkipElevationCheck
@@ -116,9 +127,43 @@ function Get-PatchEntryList {
     foreach ($line in ($Text -split "`r?`n")) {
         if ($line.Trim() -eq $markerStart) { $inside = $true; continue }
         if ($line.Trim() -eq $markerEnd) { $inside = $false; continue }
-        if ($inside -and $line.Trim()) { $entries += $line.Trim() }
+        # The block carries its own comment lines; only address lines are entries.
+        if ($inside -and $line.Trim() -and -not $line.Trim().StartsWith('#')) { $entries += $line.Trim() }
     }
     return $entries
+}
+
+function Get-PrePatchText {
+    <#
+    .SYNOPSIS
+        Returns the file text as it was before the block was appended.
+
+    .DESCRIPTION
+        The block starts with one blank line, so the split point sits after exactly one
+        separator that this tool added. Removing that separator (and nothing else) is what
+        keeps the revert byte-identical when the original file ended with a newline.
+    #>
+    param([Parameter(Mandatory)][string]$Text)
+
+    $index = $Text.IndexOf($markerStart)
+    if ($index -lt 0) { return $Text }
+    $prefix = $Text.Substring(0, $index)
+    if ($prefix.EndsWith("`r`n")) { return $prefix.Substring(0, $prefix.Length - 2) }
+    if ($prefix.EndsWith("`n")) { return $prefix.Substring(0, $prefix.Length - 1) }
+    return $prefix
+}
+
+function Get-PatchDomainNames {
+    <#
+    .SYNOPSIS
+        Pulls the hostname out of each recorded block entry.
+    #>
+    param([AllowEmptyCollection()][string[]]$Entries = @())
+
+    foreach ($entry in $Entries) {
+        $parts = $entry -split '\s+'
+        if ($parts.Count -ge 2) { $parts[1] }
+    }
 }
 
 function Read-PatchManifest {
@@ -149,11 +194,12 @@ if ($Action -eq 'Status') {
         HostsPath = $HostsPath
         Installed = ($entries.Count -gt 0)
         Entries = ($entries -join '; ')
+        Domains = @(Get-PatchDomainNames -Entries $entries)
         HostsHash = if (Test-Path -LiteralPath $HostsPath) { Get-BytesHash -Bytes ([System.IO.File]::ReadAllBytes($HostsPath)) } else { '' }
         PrePatchHash = if ($manifest) { $manifest.OriginalHash } else { '' }
         InstalledAt = if ($manifest) { $manifest.InstalledAt } else { '' }
-        Domains = $resolved
-    } | Format-List
+        Resolved = $resolved
+    } | ForEach-Object { if ($AsJson) { $_ | ConvertTo-Json -Depth 5 } else { $_ | Format-List } }
     exit 0
 }
 
@@ -163,20 +209,30 @@ if (-not (Test-IsElevated) -and -not $SkipElevationCheck) {
 }
 
 if ($Action -eq 'Install') {
-    $bytes = [System.IO.File]::ReadAllBytes($HostsPath)
-    $originalHash = Get-BytesHash -Bytes $bytes
     $text = [System.IO.File]::ReadAllText($HostsPath)
-
-    if (Get-PatchEntryList -Text $text) {
-        Write-Host 'The patch block is already present; refreshing its entries.'
-        $text = $text.Substring(0, $text.IndexOf($markerStart))
-        $text = $text.TrimEnd("`r", "`n")
-        [System.IO.File]::WriteAllBytes($HostsPath, [System.Text.Encoding]::UTF8.GetBytes($text))
-        $bytes = [System.IO.File]::ReadAllBytes($HostsPath)
-        $originalHash = Get-BytesHash -Bytes $bytes
+    $manifest = Read-PatchManifest -Path $ManifestPath
+    $existing = @()
+    if ((Get-PatchEntryList -Text $text).Count -gt 0) {
+        $existing = @(Get-PatchDomainNames -Entries (Get-PatchEntryList -Text $text))
+        Write-Host ('The patch block is already present; it holds ' + ($existing -join ', ') + '.')
+        $text = Get-PrePatchText -Text $text
     }
 
-    $block = Get-InstalledBlockText -Names $Domains
+    $names = @($Domains)
+    if ($Merge -or $existing.Count -gt 0) {
+        # Several games share one hosts file: a second game's patch adds its endpoints
+        # instead of replacing the first game's.
+        $names = @(@($existing) + @($Domains) | Where-Object { $_ } | Select-Object -Unique)
+    }
+
+    $prefixBytes = [System.Text.Encoding]::UTF8.GetBytes($text)
+    $prefixHash = Get-BytesHash -Bytes $prefixBytes
+    if ($manifest -and $manifest.OriginalHash -ne $prefixHash) {
+        Write-Warning 'The hosts file does not match the recorded pre-patch state; the current bytes become the new pre-patch baseline.'
+    }
+    [System.IO.File]::WriteAllBytes($HostsPath, $prefixBytes)
+
+    $block = Get-InstalledBlockText -Names $names
     $combined = [System.Text.Encoding]::UTF8.GetBytes($text + $block)
     [System.IO.File]::WriteAllBytes($HostsPath, $combined)
 
@@ -185,9 +241,9 @@ if ($Action -eq 'Install') {
         New-Item -ItemType Directory -Path $manifestDirectory -Force | Out-Null
     }
     [pscustomobject]@{
-        OriginalHash = $originalHash
-        OriginalLength = $bytes.Length
-        Domains = $Domains
+        OriginalHash = $prefixHash
+        OriginalLength = $prefixBytes.Length
+        Domains = $names
         HostsPath = $HostsPath
         InstalledAt = (Get-Date).ToString('s')
         Reverted = $false
@@ -200,7 +256,7 @@ if ($Action -eq 'Install') {
 
     if (-not $SkipResolveCheck) {
         $bad = @()
-        foreach ($name in $Domains) {
+        foreach ($name in $names) {
             $addresses = Get-ResolvedAddresses -Name $name
             if ($addresses -notcontains '127.0.0.1') { $bad += ("{0} -> {1}" -f $name, ($addresses -join ',')) }
         }
@@ -209,8 +265,46 @@ if ($Action -eq 'Install') {
         }
     }
 
-    Write-Host ("Offline launch patch installed for: {0}" -f ($Domains -join ', '))
-    Write-Host ("Pre-patch hosts bytes: {0} ({1} bytes) recorded in {2}" -f $originalHash, $bytes.Length, $ManifestPath)
+    Write-Host ("Offline launch patch installed for: {0}" -f ($names -join ', '))
+    Write-Host ("Pre-patch hosts bytes: {0} ({1} bytes) recorded in {2}" -f $prefixHash, $prefixBytes.Length, $ManifestPath)
+    exit 0
+}
+
+if ($Action -eq 'RemoveDomains') {
+    $text = [System.IO.File]::ReadAllText($HostsPath)
+    $entries = @(Get-PatchEntryList -Text $text)
+    if ($entries.Count -eq 0) {
+        Write-Failure 'The patch block is not present; nothing to remove.'
+        exit 22
+    }
+
+    $drop = @($Domains | ForEach-Object { $_.ToLowerInvariant() })
+    $keepEntries = @($entries | Where-Object { $drop -notcontains ((Get-PatchDomainNames -Entries @($_)) | Select-Object -First 1).ToLowerInvariant() })
+    $keepNames = @($keepEntries | ForEach-Object { (Get-PatchDomainNames -Entries @($_)) | Select-Object -First 1 })
+    $prefix = Get-PrePatchText -Text $text
+    $manifest = Read-PatchManifest -Path $ManifestPath
+
+    if ($keepEntries.Count -eq 0) {
+        $prefixBytes = [System.Text.Encoding]::UTF8.GetBytes($prefix)
+        [System.IO.File]::WriteAllBytes($HostsPath, $prefixBytes)
+        if ($manifest -and ((Get-BytesHash -Bytes $prefixBytes) -ne $manifest.OriginalHash)) {
+            Write-Warning 'The restored bytes do not match the recorded pre-patch hash.'
+        }
+        Write-Host 'Patch block removed; the hosts file is back to its pre-patch length.'
+    } else {
+        $combined = [System.Text.Encoding]::UTF8.GetBytes($prefix + (Get-InstalledBlockText -Names $keepNames))
+        [System.IO.File]::WriteAllBytes($HostsPath, $combined)
+        Write-Host ("Removed entries for: {0}. Still pinned: {1}" -f ($Domains -join ', '), ($keepNames -join ', '))
+    }
+
+    if ($manifest) {
+        $manifest | Add-Member -NotePropertyName Domains -NotePropertyValue $keepNames -Force
+        $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $ManifestPath -Encoding UTF8
+    }
+
+    if (-not $SkipDnsFlush) {
+        try { Clear-DnsClientCache -ErrorAction Stop } catch { }
+    }
     exit 0
 }
 

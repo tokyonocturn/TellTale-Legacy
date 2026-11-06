@@ -36,6 +36,9 @@
     Edit the file without restarting Steam (used by tests, and by callers that restart it
     themselves).
 
+.PARAMETER AsJson
+    Emit Status as JSON, so callers can compose it instead of parsing text.
+
 .EXAMPLE
     .\tools\Set-SteamOfflineMode.ps1 -Action Enable      # elevated
     .\tools\Set-SteamOfflineMode.ps1 -Action Status
@@ -51,7 +54,8 @@ param(
     [string]$VdfPath = 'C:\Program Files (x86)\Steam\config\loginusers.vdf',
     [string]$BackupPath = '',
     [string]$SteamExe = 'C:\Program Files (x86)\Steam\steam.exe',
-    [switch]$SkipRestart
+    [switch]$SkipRestart,
+    [switch]$AsJson
 )
 
 $ErrorActionPreference = 'Stop'
@@ -142,7 +146,7 @@ $text = [System.IO.File]::ReadAllText($VdfPath)
 $values = Get-OfflineModeValues -Text $text
 
 if ($Action -eq 'Status') {
-    [pscustomobject]@{
+    $status = [pscustomobject]@{
         VdfPath = $VdfPath
         VdfHash = Get-FileHashHex -Path $VdfPath
         WantsOfflineMode = $values.WantsOfflineMode
@@ -150,7 +154,8 @@ if ($Action -eq 'Status') {
         OfflineModeEnabled = ($values.WantsOfflineMode -eq '1')
         BackupExists = (Test-Path -LiteralPath $BackupPath)
         BackupHash = if (Test-Path -LiteralPath $BackupPath) { Get-FileHashHex -Path $BackupPath } else { '' }
-    } | Format-List
+    }
+    if ($AsJson) { $status | ConvertTo-Json -Depth 4 } else { $status | Format-List }
     exit 0
 }
 

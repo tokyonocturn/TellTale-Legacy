@@ -158,6 +158,27 @@
       "mode": "manual-attended",
       "tool": "tools/Get-Progression.ps1",
       "asserts": "At least one decision is visible again after save, exit, relaunch and the episode transition (planned observable: the drugstore survivor)."
+    },
+    {
+      "id": "game-patch-build-identity",
+      "milestone": "M4",
+      "mode": "automated",
+      "tool": "tools/Set-GameOfflinePatch.ps1",
+      "asserts": "A per-game patch refuses to install against an executable whose SHA-256 differs from the profile, so a patch can only be applied to the build it was written for."
+    },
+    {
+      "id": "game-patch-reversible-install",
+      "milestone": "M4",
+      "mode": "automated",
+      "tool": "tools/Set-GameOfflinePatch.ps1",
+      "asserts": "Endpoint pins merge across games, removing one game leaves another game's pins in place, and the last removal restores the hosts file byte-for-byte. Covered in tests/Run-Tests.ps1."
+    },
+    {
+      "id": "per-game-offline-launch",
+      "milestone": "M4",
+      "mode": "manual-attended",
+      "tool": "tools/Set-GameOfflinePatch.ps1 -Action Install",
+      "asserts": "With the machine cut off from the internet and the patch installed, the game reaches a usable frontend in about ten seconds instead of a minute or more, per game. Not yet performed for Seasons 2 to 4 or Michonne: those profiles record launchVerification UNTESTED."
     }
   ]
 }
