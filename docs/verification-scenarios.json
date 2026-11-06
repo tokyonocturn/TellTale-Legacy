@@ -178,7 +178,7 @@
       "milestone": "M4",
       "mode": "manual-attended",
       "tool": "tools/Set-GameOfflinePatch.ps1 -Action Install",
-      "asserts": "With the machine cut off from the internet and the patch installed, the game reaches a usable frontend in about ten seconds instead of a minute or more, per game. Not yet performed for Seasons 2 to 4 or Michonne: those profiles record launchVerification UNTESTED."
+      "asserts": "With the machine cut off from the internet and the patch installed, the game reaches a usable frontend in about ten seconds instead of a minute or more, per game. Not yet performed for Seasons 2 to 4, Michonne or the Definitive Series: those profiles record launchVerification UNTESTED."
     }
   ]
 }

@@ -41,7 +41,7 @@ requires an account that has signed in on that machine with a cached licence.
 | `twd-s3-steam-536220` | A New Frontier | 536220 | 2784143 | `WalkingDead3.exe` | `services.telltalegames.com` | `twd-s3-v1.0.0` |
 | `twd-michonne-steam-429570` | Michonne | 429570 | 1094475 | `WalkingDeadMichonne.exe` | `services.telltalegames.com` | `twd-michonne-v1.0.0` |
 | `twd-s4-steam-866800` | The Final Season | 866800 | 3679591 | `WalkingDead4.exe` | `services.telltalegames.com` | `twd-s4-v1.0.0` |
-| `twd-definitive-steam-1449690` | Definitive Series | 1449690 | not installed | none present | none recorded | none |
+| `twd-definitive-steam-1449690` | Definitive Series | 1449690 | 5952618 | `WDC.exe` | `services.telltalegames.com` | `twd-definitive-v1.0.0` |
 
 Every row above was read from this machine: the app id and build id from the Steam
 `appmanifest_<appid>.acf`, the executable and its hashes from the install directory itself.
@@ -49,7 +49,7 @@ Every row above was read from this machine: the app id and build id from the Ste
 ## Where the endpoints came from
 
 The Season 1 build carries `https://meta.telltalegames.com/1/` as its only publisher URL
-literal and connects to `api.telltalegames.com` during play (doc 15). The four later builds do
+literal and connects to `api.telltalegames.com` during play (doc 15). The five later builds do
 not use those names. Scanning the shipped executables for hostname and URL literals gives a
 different picture:
 
@@ -59,6 +59,7 @@ different picture:
 | A New Frontier | `https://services.telltalegames.com`, `https://services.telltalegames.com/1/syncfs/`, `www.telltalegames.com` (all three executables) |
 | Michonne | `https://services.telltalegames.com`, `https://services.telltalegames.com/1/syncfs/`, `www.telltalegames.com` |
 | The Final Season | `https://services.telltalegames.com`, `https://services.telltalegames.com/1/syncfs/`, `www.telltalegames.com` |
+| Definitive Series | `https://services.telltalegames.com`, `https://services.telltalegames.com/1/syncfs/`, `www.telltalegames.com` (in the sign-in help sentence) |
 
 `services.telltalegames.com` is the one pinned: it is the host a startup or file-sync call
 would block on. `www.telltalegames.com` appears as a store link, not a startup call, so it is
@@ -77,9 +78,10 @@ these builds were running, and the profiles say so.
 | Each build's publisher endpoint, as listed above | **VERIFIED as a string literal** | executable scan on this machine; not observed on the wire |
 | Patch install and revert are byte-exact and per-game | **VERIFIED** | automated: `tests/Run-Tests.ps1` installs two games' patches, removes one and checks the other survives, then checks the last removal restores the original hosts bytes |
 | The patch refuses a build it was not written for | **VERIFIED** | automated: a mismatched executable exits 24 and pins nothing |
-| Offline launch time on Seasons 2, 3, 4 and Michonne | **UNTESTED** | no launch was timed on those builds; their profiles record `launchVerification: UNTESTED` |
+| The Definitive Series install and its executable hash | **VERIFIED** | `-Action Status` on this machine after installation: `BuildMatches: True` against `WDC.exe`, app 1449690, build 5952618 |
+| Offline launch time on Seasons 2, 3, 4, Michonne and the Definitive Series | **UNTESTED** | no launch was timed on those builds; their profiles record `launchVerification: UNTESTED` |
 | Gameplay, saves and episode transitions offline on those builds | **UNTESTED** | nothing was played; only Season 1 has gameplay evidence (doc 08) |
-| Definitive Series, any claim at all | **UNTESTED, blocked** | Steam reports `SizeOnDisk 0`, `buildid 0`, `StateFlags 1026` and the install directory is empty |
+| Whether the Definitive Series launcher shows a Telltale sign-in prompt offline | **UNTESTED** | `WDC.exe` contains that sentence as a string; no launch was made to see whether it is reachable |
 
 The honest summary: the launch fix is proven on one game and is a Steam client setting, while
 the per-game part, the endpoint set and the build identity, is read from the shipped binaries
@@ -87,19 +89,38 @@ but has not been exercised by launching each game.
 
 ## The Definitive Series
 
-`appmanifest_1449690.acf` is present in the `F:` library, so Steam has the app registered for
-that library, but it reports no downloaded bytes and the install folder contains nothing. That
-is a registered, uninstalled app, not a damaged install.
+This was the last patch in the queue, and it was blocked until the app was actually installed:
+for a while Steam had app 1449690 registered on the `F:` library but reported `buildid 0`,
+`SizeOnDisk 0` and `StateFlags 1026` against an empty folder. Guessing its endpoint from
+Seasons 2 to 4 would have been fabrication, so the profile recorded the blocked reading with no
+executable, no hostname and no endpoint, and the driver refuses such a profile (exit 21) by
+design.
 
-No profile facts were invented for it. `profiles/twd-definitive-steam-1449690/profile.json`
-records the manifest reading and deliberately carries no executable, no hostname and no
-endpoint, because the Definitive Series is a later build of the engine and hostnames from
-Season 2 to 4 would be a guess. `Set-GameOfflinePatch.ps1` refuses a profile with no endpoints
-(exit 21), so an invented patch cannot be installed by accident.
+The app was then installed on the same machine. The reading is now `StateFlags 4`,
+`SizeOnDisk 48,816,593,394`, `buildid 5952618`, eight top-level entries and a populated
+`Archives` folder, and the profile was rewritten from the real binary:
 
-To unblock it: install the app in Steam, then read the install with
-`tools/Get-GameInventory.ps1`, and a profile plus endpoint set can be written from the real
-binary.
+| Fact | Value |
+|---|---|
+| Executable | `WDC.exe`, 18,162,896 bytes, x64, linked 2019-11-25 09:42:12Z |
+| SHA-256 | `5f44e53fcaec4c59c8c2f79403722076fc1c518c0d006d2a1262efeaec656782` |
+| File version | 2019.11.25.83, product GameApp 1.0.0.1 |
+| Publisher literals | `https://services.telltalegames.com`, `https://services.telltalegames.com/1/syncfs/` |
+| Content | 480 archives, 48,794,065,464 bytes, flat in `Archives` with no per-episode folders |
+| Episode codes | 101 to 106, 201 to 205, 301 to 305, 401 to 404 |
+
+Two things about this build are worth recording rather than smoothing over. First, the archives
+are flat: Seasons 1 to 4 keep episode directories, while the collection names every archive
+`WDC_pc_WalkingDead<code>_<class>` or `WD4_<language>_<set><code>` in one folder, so any tooling
+that assumes per-episode directories will not fit it. Second, code 106 exists in Season 1 with
+six archives, which is the slot 400 Days occupies in Telltale packaging; the collection
+includes that content, which the standalone Season 1 install here does not have. Neither the
+code mapping nor the content was confirmed by playing it.
+
+`WDC.exe` also carries the sentence "To unlock your game, log in with your Telltale e-mail
+address and password." No login gate was exercised and no launch was made, so whether this build
+can present that prompt offline is unknown and is listed as such in the profile. If it does
+appear, it is a different problem from the launch wait and this patch does not address it.
 
 ## Several games, one hosts file
 
@@ -128,5 +149,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests\Run-Tests.ps1
 ## Tags
 
 Each game's patch landed in its own commit and carries its own annotated tag, listed in the
-table above. `git tag -l 'twd-*-v1.0.0'` lists them; the tag points at the commit that added
+table above. `git tag -l 'twd-*-v1.0.0'` lists all six; the tag points at the commit that added
 that game's profile and its patch wiring, so each game can be checked out independently.

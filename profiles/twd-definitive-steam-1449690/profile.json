@@ -1,66 +1,114 @@
 {
   "schemaVersion": 1,
   "id": "twd-definitive-steam-1449690",
-  "displayName": "The Walking Dead: The Telltale Definitive Series - Steam app 1449690",
-  "status": "blocked-not-installed",
+  "displayName": "The Walking Dead: The Telltale Definitive Series - Steam build 5952618",
+  "status": "offline-patch-ready",
   "steamAppId": 1449690,
-  "steamBuildId": "",
+  "steamBuildId": "5952618",
   "installPaths": [
     "F:\\SteamLibrary\\steamapps\\common\\The Walking Dead The Telltale Definitive Series"
   ],
   "engine": {
-    "family": "unknown",
-    "note": "Not established on this machine: there is no build to read."
+    "family": "telltale-tool",
+    "audio": "FMOD Studio x64 (fmod64.dll, fmodstudio64.dll)",
+    "compression": "Oodle 5 (oo2core_5_win64.dll)",
+    "video": "TTMediaEngine64.dll",
+    "archiveFormat": "ttarch2",
+    "architecture": "x64",
+    "note": "The launcher executable reports product GameApp 1.0.0.1 and a file version of 2019.11.25.83, so this is the late 2019 collection build of the same engine family as The Final Season rather than the 2012 Season 1 build."
   },
-  "executable": "",
-  "architecture": "unknown",
-  "linkTimestampUtc": "",
-  "knownGoodHashes": {},
+  "executable": "WDC.exe",
+  "architecture": "x64",
+  "linkTimestampUtc": "2019-11-25 09:42:12Z",
+  "knownGoodHashes": {
+    "WDC.exe": "5f44e53fcaec4c59c8c2f79403722076fc1c518c0d006d2a1262efeaec656782",
+    "steam_api64.dll": "0ee64af072052ab95438fb8e054a68e4d392de941ef867a0124992aafccc7938",
+    "fmod64.dll": "db8f02870e8d73c6a493ef84e5755f15fde61c48ae6ef7c5fc23caf073bb0802",
+    "fmodstudio64.dll": "af6ff9d942d6fe92db0cae5cab78066958c436c79eabd6adc5446a79cbed009c",
+    "oo2core_5_win64.dll": "4c3dcfebb2bb59650690feb4c63d68a5838c37c0ff233c2445269fef0c5a40d0",
+    "TTMediaEngine64.dll": "a50a7f00bf8d28ab3ceb645344e86e68e3d2ec97935dcd94c0d8e31cc744b64a"
+  },
   "installEvidence": {
     "manifestPath": "F:\\SteamLibrary\\steamapps\\appmanifest_1449690.acf",
-    "manifestBuildId": "0",
-    "manifestSizeOnDisk": "0",
-    "manifestStateFlags": "1026",
-    "installDirectoryFiles": 0,
+    "manifestBuildId": "5952618",
+    "manifestSizeOnDisk": "48816593394",
+    "manifestStateFlags": "4",
+    "topLevelEntries": 8,
     "observedUtc": "2026-11-06",
-    "reading": "Steam has the app registered for this library but reports no downloaded bytes and the install directory is empty. StateFlags 1026 carries the not-fully-installed bits, so this is a registered, uninstalled app, not a damaged install."
+    "reading": "On the first reading this app was registered but not downloaded (buildid 0, SizeOnDisk 0, StateFlags 1026, empty folder). It was then installed on the same machine and now reports StateFlags 4 with 48,816,593,394 bytes on disk, eight top level entries and a populated Archives folder, so this profile replaces the earlier blocked record."
   },
   "content": {
-    "archiveRoot": "",
-    "archiveFormat": "",
-    "archiveCount": 0,
-    "episodeDirectories": {}
+    "archiveRoot": "Archives",
+    "archiveFormat": "ttarch2",
+    "archiveLayout": "flat: every archive sits directly in Archives with no per-episode directories, unlike Seasons 1 to 4",
+    "archiveCount": 480,
+    "archiveBytes": 48794065464,
+    "episodeDirectories": {
+      "101": "Season 1, episode 1",
+      "102": "Season 1, episode 2",
+      "103": "Season 1, episode 3",
+      "104": "Season 1, episode 4",
+      "105": "Season 1, episode 5",
+      "106": "Season 1 extra episode code, the slot 400 Days occupies in Telltale packaging",
+      "201": "Season 2, episode 1",
+      "202": "Season 2, episode 2",
+      "203": "Season 2, episode 3",
+      "204": "Season 2, episode 4",
+      "205": "Season 2, episode 5",
+      "301": "Season 3, episode 1",
+      "302": "Season 3, episode 2",
+      "303": "Season 3, episode 3",
+      "304": "Season 3, episode 4",
+      "305": "Season 3, episode 5",
+      "401": "Season 4, episode 1, Done Running",
+      "402": "Season 4, episode 2, Suffer the Children",
+      "403": "Season 4, episode 3, Broken Toys",
+      "404": "Season 4, episode 4, Take Us Back"
+    },
+    "evidence": "Episode codes come from archive names: WDC_pc_WalkingDead1NN for Season 1, 2NN and 3NN for the later seasons, and WD4_PC_4NN plus per-language WD4_*_4NN sets for Season 4. Counts per code were tallied from the 480 file names on this machine. Season 4 titles are carried over from the standalone The Final Season profile. Code 106 is the extra Season 1 episode slot that holds 400 Days; no title string was read to confirm it, and nothing was played to confirm any mapping.",
+    "note": "This install carries 400 Days content, which the standalone Season 1 install on this machine does not have."
   },
   "onlineDependencies": {
     "steamDrm": {
       "required": true,
-      "evidence": "The Definitive Series ships through Steam; the app is registered here.",
+      "evidence": "WDC.exe sits beside steam_api64.dll and the app is delivered through Steam.",
       "policy": "Never bypassed. Steam Offline Mode with a cached licence is the supported offline path."
     },
     "publisherServices": {
       "required": false,
-      "hosts": [],
-      "urls": [],
-      "evidence": "Unknown. Nothing can be read from an executable that is not installed, and this profile does not guess hostnames from other builds: the Definitive Series is a different, later build of the engine.",
-      "runtimeObservation": "Not observed."
-    }
+      "hosts": [
+        "services.telltalegames.com",
+        "www.telltalegames.com"
+      ],
+      "urls": [
+        "https://services.telltalegames.com",
+        "https://services.telltalegames.com/1/syncfs/"
+      ],
+      "evidence": "String literals inside WDC.exe, read on this machine. services.telltalegames.com appears twice in ASCII, once bare and once with the /1/syncfs/ path. www.telltalegames.com appears only as UTF-16 text inside the sign-in help sentence, so it is a help or store link, not a startup call. The other hostnames in the binary belong to bundled libraries (curl, OpenSSL, Box2D, Lua, Microsoft) and were excluded.",
+      "runtimeObservation": "Not observed. No packet capture or netstat sample was taken while this build was running."
+    },
+    "unexplainedString": "WDC.exe carries the UTF-16 sentence 'To unlock your game, log in with your Telltale e-mail address and password.' No login gate was exercised, and it is not known whether this build shows it or whether it is a leftover resource. If a sign-in prompt does appear offline, that is a separate problem from the launch wait and is not addressed by this patch."
   },
   "offlinePatch": {
-    "tag": "",
+    "tag": "twd-definitive-v1.0.0",
     "tool": "tools/Set-GameOfflinePatch.ps1",
-    "endpoints": [],
+    "endpoints": [
+      "services.telltalegames.com"
+    ],
     "steamOfflineModeRequired": true,
     "launchVerification": "UNTESTED",
     "verified": [
-      "Steam has the app registered for library F: with appid 1449690",
-      "the install directory exists and contains no files, so no build is present to patch"
+      "the installed executable matches the sha256 this patch is written for, so the patch applies to this build only",
+      "the publisher endpoint was located as a string literal in the shipped WDC.exe",
+      "installing and removing the endpoint pin is byte-reversible: the same mechanics are covered for the shared tool by tests/Run-Tests.ps1, including the two-game merge and the last-removal restore"
     ],
     "untested": [
-      "everything about the executable, content layout and endpoints: no build is installed",
-      "the offline launch wait on this build"
+      "the offline launch wait on this build: no launch was timed under a network cut-off",
+      "whether the launcher's own season selector needs anything beyond services.telltalegames.com",
+      "the sign-in sentence recorded above, and whether it can appear offline",
+      "gameplay, saves and achievements offline on this build"
     ],
-    "blocker": "Install the app (Steam > The Walking Dead: The Telltale Definitive Series > Install), then run tools/Get-GameInventory.ps1 against the install and a profile plus endpoint set can be written from the real binary. Writing endpoints now would be a guess, and the patch driver refuses a profile without endpoints by design.",
-    "crossReference": "The launch fix itself is Steam's own Offline Mode switch, measured on Season 1 in docs/rea/19-offline-launch-stall.md. That part applies to any Steam game; only the endpoint pin is per build.",
+    "crossReference": "The launch fix itself is Steam's own Offline Mode switch, measured on Season 1 in docs/rea/19-offline-launch-stall.md (condition D: usable frontend at 11.63 s with the client and game cut off, against no launch in 220 s without it). It is a client-wide setting, not a per-game one.",
     "documentation": "docs/rea/20-other-games-offline-patch.md"
   }
 }

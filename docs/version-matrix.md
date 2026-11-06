@@ -39,17 +39,24 @@ Full hashes are in `profiles/twd-s1-steam-207610/profile.json`.
 | Audio endpoint `100027813` | **identified** (`{63b45a0d-…}`), 3 of 4 same-named devices stale | `11-audio-routing.md` |
 | Game audio on `100027813` | **not routed / not verified** | `11-audio-routing.md` |
 
-## Builds identified but not investigated
+## Other releases on this machine
 
-These exist and are referenced in store metadata on this machine, but **no analysis
-has been performed** and no profile exists. They must not inherit Season 1
-conclusions: content layout, DRM and engine revision may differ.
+Each of these now has its own profile with real hashes, executable and publisher
+endpoint read from its installed binary, and its own offline patch. They do not
+inherit Season 1 conclusions: content layout, DRM and engine revision differ, and
+only Season 1 has had a launch timed or a session observed. Details and the
+verified/untested split are in [20-other-games-offline-patch.md](rea/20-other-games-offline-patch.md).
 
-| Title | Steam app | State on this machine |
-| --- | --- | --- |
-| The Walking Dead: Season Two | 261030 | manifest present, not installed |
-| The Walking Dead: The Final Season | 866800 | manifest present, not installed |
-| The Walking Dead: The Telltale Definitive Series | 1449690 | manifest present, not installed |
+| Title | Steam app | Build | Executable | Patch tag |
+| --- | --- | --- | --- | --- |
+| The Walking Dead: Season Two | 261030 | 1298753 | `TheWalkingDead2.exe` | `twd-s2-v1.0.0` |
+| The Walking Dead: A New Frontier | 536220 | 2784143 | `WalkingDead3.exe` | `twd-s3-v1.0.0` |
+| The Walking Dead: Michonne | 429570 | 1094475 | `WalkingDeadMichonne.exe` | `twd-michonne-v1.0.0` |
+| The Walking Dead: The Final Season | 866800 | 3679591 | `WalkingDead4.exe` | `twd-s4-v1.0.0` |
+| The Walking Dead: The Telltale Definitive Series | 1449690 | 5952618 | `WDC.exe` | `twd-definitive-v1.0.0` |
+
+Not yet analysed: 400 Days as a standalone install. The Definitive Series does
+carry that content (episode code 106), which is noted in its profile.
 
 ## How to add a build
 

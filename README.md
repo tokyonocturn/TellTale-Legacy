@@ -114,7 +114,7 @@ profile is refused rather than patched.
 | A New Frontier | 536220 | 2784143 | `twd-s3-steam-536220` | `twd-s3-v1.0.0` | not yet measured |
 | Michonne | 429570 | 1094475 | `twd-michonne-steam-429570` | `twd-michonne-v1.0.0` | not yet measured |
 | The Final Season | 866800 | 3679591 | `twd-s4-steam-866800` | `twd-s4-v1.0.0` | not yet measured |
-| Definitive Series | 1449690 | not installed | `twd-definitive-steam-1449690` | none | blocked: no build on disk |
+| Definitive Series | 1449690 | 5952618 | `twd-definitive-steam-1449690` | `twd-definitive-v1.0.0` | not yet measured |
 
 ```powershell
 # read-only: install present, build hash match, endpoint pins, client mode
@@ -229,10 +229,14 @@ See [docs/installation.md](docs/installation.md) for prerequisites and details.
 * Milestone 4: save-container research (keystream/compression identification) so
   decisions can be verified by content rather than behaviour, without extracting
   assets.
-* Later: 400 Days as its own profile, and the Definitive Series last: its app is
-  registered on this machine but not downloaded (`SizeOnDisk 0`, empty install
-  folder), so its profile and endpoints wait until there is a build to read. The
-  engine is shared but content layout and DRM differ across all of these.
+* Done: all five releases outside Season 1 have a profile and a patch. The
+  Definitive Series was patched last, once it was installed: its launcher is
+  `WDC.exe`, build 5952618, and it carries the same publisher hostname as
+  Seasons 2 to 4. Its archive layout is flat rather than per-episode, and it
+  includes 400 Days content that the standalone Season 1 install here lacks.
+* Open: no launch has been timed on any of the five patched builds, and the
+  Definitive Series launcher contains a Telltale sign-in sentence whose offline
+  behaviour was never exercised.
 
 ## Legal
 
