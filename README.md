@@ -130,6 +130,24 @@ The endpoint each build contacts was read from its own executable, not assumed: 
 `meta.telltalegames.com`. Details, including what is measured and what is not, are in
 [docs/rea/20-other-games-offline-patch.md](docs/rea/20-other-games-offline-patch.md).
 
+## Release packages
+
+Each game is published as a self-contained zip on its tag's release: the shared tooling, the
+documentation, that game's profile and a generated `PATCH.md` with the commands and the
+verified/untested lists for that build. No other game's profile is included, and no game code,
+assets, archives or saves are ever packaged.
+
+```powershell
+.\tools\New-ReleasePackage.ps1                                                  # every profile
+.\tools\New-ReleasePackage.ps1 -ProfileId twd-s2-steam-261030 -Tag twd-s2-v1.0.0  # one game
+```
+
+Files come from a commit, not from the working tree, so a zip always matches a state that
+exists in git. The script refuses forbidden paths (backups, `dist`, `tools/scratch`,
+`docs/rea/data`, logs) and any file over 4 MB, writes a manifest with a hash per file next to
+the zip, and stamps entries with the commit's timestamp so the same commit rebuilds to the same
+bytes.
+
 ## Repository layout
 
 ```
@@ -152,6 +170,7 @@ tools/                    Preservation tooling (PowerShell 5.1, no external depe
   Set-SteamOfflineMode.ps1  Puts Steam in Offline Mode so an offline launch does not wait
   Set-OfflineLaunchPatch.ps1  Pins the publisher hostnames to loopback (byte-reversible)
   Set-GameOfflinePatch.ps1  Applies, reports or reverts one game's patch after a build check
+  New-ReleasePackage.ps1  Builds one self-contained zip and manifest per game profile
   Measure-LaunchLatency.ps1  Times a launch to a usable frontend by driving it
   classify_frame.py       Frame measurement helper used by the latency instrument
 tests/                    Automated tests for the tooling (synthetic fixtures)
