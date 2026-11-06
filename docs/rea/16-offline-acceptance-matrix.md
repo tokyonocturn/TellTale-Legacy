@@ -86,7 +86,7 @@ Block applied throughout: both domains → `127.0.0.1`, hosts hash
 | **Episode 3 initialization offline** | **VERIFIED** | title card → subtitled dialogue → truck scene; ladder click made Lee climb, live Kenny dialogue, `Attach Trailer Axle` widget, 0 remote connections |
 | **Episode 4 initialization offline** | **VERIFIED** | `LOADING` (~100 s) → Savannah/church opening cinematics → `W` walked Lee (1,299,901 px) with the camera following, 0 remote connections |
 | **Episode 5 initialization offline** | **VERIFIED** | morgue opening with live `LOOK AT` / `FIRE EXTINGUISHER` widgets → `W` walked Lee and the scene transitioned (1,549,343 px), 0 remote connections |
-| **Episode 2 opening, first cold load** | **FAILED** (twice), then not reproducible | frozen at `THREE MONTHS LATER` for >8 min: 0 connections, ~110–125 % one core, 464 KB/10 s read, pause menu live, audio peak 0.082031 on `100027813`, and a 9-point click grid plus `W`/`Space`/`Enter`/`E` changed nothing beyond ambient sway; the same prompt played with no stall once Episodes 3–5 had been loaded. Cause **not established**, and not the network |
+| **Episode 2 opening, first cold load** | **FAILED** (twice), then not reproducible | frozen at `THREE MONTHS LATER` for >8 min: 0 connections, ~110–125 % one core, 464 KB/10 s read, pause menu live, audio peak 0.082031 on `100027813`, and a 9-point click grid plus `W`/`Space`/`Enter`/`E` changed nothing beyond ambient sway; the same prompt played with no stall once Episodes 3–5 had been loaded. Cause per the owner's finding: **this opening needs human input at the controls** — the harness's synthetic events do not carry it — so it is input/attention-side, **not** a network fault |
 | **Episode discovery / unlock state offline** | **VERIFIED** | the game's own EPISODE STATUS screen, block held, lists Episodes 1–5 as `Installed` and 400 Days as `Coming Soon` — `docs/rea/data/20261106-episode-status-offline.png`; each episode page offered `PLAY` and each episode started |
 | **Save creation offline** | **VERIFIED** | new saves written by the game with the block held: `save_11` (Ep2), `save_12` (Ep4), `save_13` (Ep5); `save_9`/`save_7`/`save_10` rewritten during the Episode 1 drive |
 | **Save persistence across restart offline** | **VERIFIED** | clean `EXIT GAME`, cold relaunch, slot row and episode pages rebuilt from the rewritten saves, Episode 1 finale reloaded from the restored profile |
@@ -103,5 +103,6 @@ Block applied throughout: both domains → `127.0.0.1`, hosts hash
   discovery, unlock state, saves, cinematics and audio all work locally.
 - **Not proven:** Episode 1's credits, the ending-driven Episode 1 → Episode 2 transition,
   and downstream branching consequences. 400 Days is not installed.
-- The one unexplained runtime failure is the intermittent Episode 2 first-load stall, which
-  is a scene/asset-side stall with no network involvement.
+- The one runtime failure is the Episode 2 opening stalling under this harness. Per the
+  owner's diagnosis it needs **human input at the controls**; the synthetic events do not
+  move it. Either way it is input-side, not network-side.

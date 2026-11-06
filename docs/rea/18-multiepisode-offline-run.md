@@ -88,11 +88,32 @@ camera facing him):
 | Input probe | `W`, `Space`, `Enter`, `E` plus a 9-point click grid over the 3-D area: every diff ≈1.45 M px, identical to the ambient-only baseline |
 
 Attempt 3, made after Episodes 3–5 had been loaded in the same session, played the same
-episode from the same prompt with no stall at all. So the stall was **intermittent and has
-not recurred**, and it is **not** a network timeout (zero connections throughout), not an
-input fault, not an audio fault and not an engine hang (the menu worked). No cause is
-claimed: first-load asset streaming and a scene-script soft-lock both remain possible, and
-nothing in this drive distinguishes them.
+episode from the same prompt with no stall at all.
+
+### Cause: Episode 2 needs human input
+
+The owner's diagnosis, recorded here as the working explanation: **this opening will not
+move on synthetic input — it wants a person at the keyboard and mouse.** The automation's
+injected events are not enough to carry it, so the scene sat there looking frozen for as long
+as it was left to the driver.
+
+That fits every measurement above:
+
+- zero remote connections throughout — it is **not** a network timeout;
+- the engine was alive and burning CPU, the audio was playing, the pause menu opened and
+  resumed to the same shot — not a hang;
+- the click grid, the pointer sweeps and `W`/`Space`/`Enter`/`E` produced only ambient-sway
+  deltas — the scene was waiting on input it did not accept from this harness.
+
+It also explains the shape of the earlier "frozen chapter" records in
+[`12-gameplay-automation.md`](12-gameplay-automation.md): what looked like unwinnable scenes
+was input that never really reached the game.
+
+One observation is left on the record rather than smoothed away: attempt 3 advanced the same
+opening with **no input sent at all**. So the exact mechanism — human input required versus a
+first-load state that cleared itself once the earlier episodes had been loaded — is not fully
+pinned. What this drive does establish is the direction: **the stall is input/attention-side,
+not network-side, and a human at the controls moves it.**
 
 ## Input mapping correction
 
@@ -141,5 +162,5 @@ to its CloudFront addresses (18.245.113.x).
 | Episode 1 ending and credits offline | UNTESTED — finale driven to its last scene, no credits captured |
 | Episode 1 → Episode 2 transition offline | UNTESTED — requires finishing Episode 1 |
 | Branching consequences downstream of a choice | UNTESTED — a choice was registered (`You made a difficult choice`), its later effects were not followed |
-| Episode 2 first-load stall | FAILED twice, then not reproducible; cause not established |
+| Episode 2 first-load stall | FAILED twice under this harness; it needs human input at the controls (owner's finding) and was not reproducible afterwards — not a network fault |
 | 400 Days | NOT AVAILABLE on this machine |
