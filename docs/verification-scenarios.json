@@ -3,7 +3,7 @@
   "description": "Verification scenarios for Telltale Legacy. Every claim in the docs must map to a scenario here, and every scenario declares whether a machine check or a human at the keyboard produced the evidence. This keeps automated checks from being read as proof of gameplay behaviour.",
   "modes": {
     "automated": "Reproducible without the game running; the harness or a tool asserts the outcome.",
-    "manual-attended": "A person plays the game; the agent may only observe, capture evidence and record results."
+    "manual-attended": "A person plays the game; automation may only observe, capture evidence and record results."
   },
   "scenarios": [
     {

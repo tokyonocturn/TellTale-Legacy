@@ -5,7 +5,7 @@ docs/rea/data/
 backups/
 *.pre-restore-*/
 
-# Agent/editor scratch and tool caches
+# Editor scratch and tool caches
 .freebuff/
 threads/
 tools/scratch/

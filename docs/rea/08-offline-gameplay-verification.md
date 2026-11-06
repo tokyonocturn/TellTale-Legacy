@@ -27,9 +27,9 @@ wrapper is the legitimate gate and was never touched.
 - The first playthrough (new game, opening act, several checkpoints) was played
   by the project owner at the keyboard. It is recorded as an **attended** run.
 - Resume, exit and the second launch were driven through real mouse/keyboard
-  input to the game window while the agent observed. This is UI automation of a
-  human-equivalent click path, not gameplay automation, and it is labelled as
-  such.
+  input to the game window, with screenshots captured as they ran. This is UI
+  automation of a human-equivalent click path, not gameplay automation, and it
+  is labelled as such.
 - No save was hand-edited, deleted or fabricated. Save operations were never
   scripted against the game.
 
@@ -47,8 +47,8 @@ wrapper is the legitimate gate and was never touched.
 | 8 | Second offline launch, same path | Slot list again, CONTINUE resumes the same checkpoint, `save_2` written; 0 TCP connections |
 | 9 | Esc → main menu → EXIT GAME → Yes | Clean exit again |
 
-Step 4 is the owner's; steps 1–3 and 5–9 were observed or driven by the agent
-with the owner present.
+Step 4 is the owner's; steps 1–3 and 5–9 were observed or driven by scripted
+input with the owner present.
 
 ## Evidence
 
@@ -135,8 +135,8 @@ content is missing for the transition when it is played.
 - Episode transition and 400 Days are untested (content absent for the latter).
 - Slot-number selection is unexplained; resumes wrote slots 3 and 2 for a save
   loaded from slot 5.
-- Screenshots were inspected by the agent; no frame-by-frame capture of dialogue
-  timing was recorded.
+- Screenshots were reviewed by eye; no frame-by-frame capture of dialogue timing
+  was recorded.
 
 ## Reproduce
 

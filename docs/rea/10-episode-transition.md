@@ -160,7 +160,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-Progression.ps1 `
 
 ## Blocker
 
-Episode 1 cannot be completed by the agent. It is roughly two hours of narrative
+Episode 1 cannot be completed by scripted input. It is roughly two hours of narrative
 play (dialogue choices, QTEs, exploration) and the game has **no chapter select**:
 progression is autosave-only, so reaching the ending means playing forward from the
 current checkpoint. Driving that with synthesised input would produce a fabricated
