@@ -593,6 +593,35 @@ try {
         Assert-Equal 2 $result.ExitCode 'a comma-joined domain must be refused'
         Assert-True ($result.StdErr -like '*Invalid domain*') 'expected an invalid-domain message'
     }
+    Write-Host ''
+    Write-Host 'Audio endpoint probe'
+
+    Test-Case 'Audio probe reports an unknown target endpoint as unavailable' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-AudioRoute.ps1') -ScriptArguments @(
+            '-TargetName', 'no-such-endpoint-xyz', '-Samples', '1'
+        )
+        Assert-Equal 2 $result.ExitCode 'an unknown endpoint must exit 2'
+        Assert-True ($result.StdErr -like '*no active render endpoint*') 'expected an unavailable-endpoint message'
+    }
+
+    Test-Case 'Audio probe resolves the configured endpoint by name when present' {
+        $reportPath = Join-Path $script:sandbox 'audio-route.json'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-AudioRoute.ps1') -ScriptArguments @(
+            '-TargetName', '100027813', '-Samples', '1', '-OutputPath', $reportPath
+        )
+        # The endpoint is hardware-dependent: accept "present" (0) or "absent" (2),
+        # but never a crash, and when present the report must be well formed.
+        Assert-True ($result.ExitCode -eq 0 -or $result.ExitCode -eq 2) ("unexpected exit code: " + $result.StdErr)
+        if ($result.ExitCode -eq 0) {
+            Assert-True (Test-Path -LiteralPath $reportPath) 'report should be written'
+            $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+            Assert-Equal '100027813' $report.TargetName 'target name'
+            Assert-True ($report.TargetActiveCount -ge 1) 'target should have an active endpoint'
+            Assert-True (@($report.Endpoints).Count -ge 1) 'expected at least one endpoint'
+            $active = @($report.Endpoints | Where-Object { $_.State -eq 'active' })
+            Assert-True ($active.Count -ge 1) 'expected an active endpoint entry'
+        }
+    }
 }
 finally {
     if (Test-Path -LiteralPath $script:sandbox) {
