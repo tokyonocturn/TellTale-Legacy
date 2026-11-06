@@ -67,8 +67,17 @@ function Invoke-Script {
     }
 }
 
-$script:sandbox = Join-Path $env:TEMP ("telltale-legacy-tests-{0}" -f [guid]::NewGuid().ToString('N'))
+# Fixtures go on the volume with the most free space, not on %TEMP% by default: the
+# transition-readiness scenario asserts that the save volume has at least 1 GB free, so
+# running it from a nearly full system drive would fail the scenario for a reason the
+# scenario is not testing.
+$spaciousVolumes = @(Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue |
+    Where-Object { $_.Free -gt 2GB -and $_.Root } |
+    Sort-Object -Property Free -Descending)
+$fixtureRoot = if ($spaciousVolumes.Count -gt 0) { $spaciousVolumes[0].Root } else { $env:TEMP }
+$script:sandbox = Join-Path $fixtureRoot ("telltale-legacy-tests-{0}" -f [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $script:sandbox -Force | Out-Null
+Write-Host ("fixtures: {0}" -f $script:sandbox)
 
 try {
     # ---------------------------------------------------------------- fixtures
