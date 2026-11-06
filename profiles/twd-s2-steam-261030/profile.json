@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "id": "twd-s2-steam-261030",
+  "displayName": "The Walking Dead: Season Two - Steam build 1298753",
+  "status": "offline-patch-ready",
+  "steamAppId": 261030,
+  "steamBuildId": "1298753",
+  "installPaths": [
+    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\The Walking Dead Season Two"
+  ],
+  "engine": {
+    "family": "telltale-tool",
+    "audio": "FMOD Ex (fmodex.dll)",
+    "archiveFormat": "ttarch2",
+    "architecture": "x86"
+  },
+  "executable": "TheWalkingDead2.exe",
+  "architecture": "x86",
+  "linkTimestampUtc": "2014-01-13 22:35:58Z",
+  "knownGoodHashes": {
+    "TheWalkingDead2.exe": "134949c68afed62a23225b7e7050bdf3970df3685f3ea432e8a33f3b01e78aa1",
+    "steam_api.dll": "b0fd893eaa8a225510389e04c0802312539a01fd2eb3a1a8a38005cee7f1d10f",
+    "fmodex.dll": "7f37640a53ed7462576b4c67d0b9aeb84e0eb2f5439f00fcd7ba9ef942813fa4"
+  },
+  "content": {
+    "archiveRoot": "Pack",
+    "archiveFormat": "ttarch2",
+    "archiveCount": 62,
+    "archiveBytes": 4128163127,
+    "episodeDirectories": {
+      "201": "Episode 1, All That Remains",
+      "202": "Episode 2, A House Divided",
+      "203": "Episode 3, In Harm's Way",
+      "204": "Episode 4, Amid the Ruins",
+      "205": "Episode 5, No Going Back"
+    },
+    "evidence": "Episode numbers come from the archive names in Pack (WD2_pc_*_EP2..EP5 patch archives plus WalkingDead2/WD202 sets); the mapping was not confirmed by playing each episode on this machine."
+  },
+  "onlineDependencies": {
+    "steamDrm": {
+      "required": true,
+      "evidence": "TheWalkingDead2.exe imports steam_api.dll and the build ships Steam's DRM stub; Steam remains the gate.",
+      "policy": "Never bypassed. Steam Offline Mode with a cached licence is the supported offline path."
+    },
+    "publisherServices": {
+      "required": false,
+      "hosts": [
+        "services.telltalegames.com",
+        "www.telltalegames.com"
+      ],
+      "urls": [
+        "https://services.telltalegames.com/1/bulkresource",
+        "https://services.telltalegames.com/1/syncfs/"
+      ],
+      "evidence": "String literals inside TheWalkingDead2.exe (leaf names and full URLs), read on this install. services.telltalegames.com is the endpoint a startup or save-sync call can block on; www.telltalegames.com is a store link, not a startup call.",
+      "runtimeObservation": "Not observed. No packet capture or netstat sample was taken while this build was running."
+    }
+  },
+  "offlinePatch": {
+    "tag": "twd-s2-v1.0.0",
+    "tool": "tools/Set-GameOfflinePatch.ps1",
+    "endpoints": [
+      "services.telltalegames.com"
+    ],
+    "steamOfflineModeRequired": true,
+    "launchVerification": "UNTESTED",
+    "verified": [
+      "the installed executable matches the sha256 this patch is written for, so the patch applies to this build only",
+      "the publisher endpoint was located as a string literal in the shipped executable, with the /1/syncfs/ and /1/bulkresource paths next to it",
+      "installing and removing the endpoint pin restores the hosts file byte-for-byte (same mechanics as tests/Run-Tests.ps1 covers for the shared tool)"
+    ],
+    "untested": [
+      "the offline launch wait on this build: no launch was timed under a network cut-off",
+      "gameplay, saves, episode transitions and achievements offline on this build",
+      "whether this build contacts anything else during startup that the strings do not show"
+    ],
+    "crossReference": "The launch fix itself is Steam's own Offline Mode switch, measured on Season 1 in docs/rea/19-offline-launch-stall.md (condition D: usable frontend at 11.63 s with the client and game cut off, against no launch in 220 s without it). It is a client-wide setting, not a per-game one.",
+    "documentation": "docs/rea/20-other-games-offline-patch.md"
+  }
+}
