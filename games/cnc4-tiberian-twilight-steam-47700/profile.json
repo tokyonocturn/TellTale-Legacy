@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 2,
+  "id": "cnc4-tiberian-twilight-steam-47700",
+  "title": "Command & Conquer 4: Tiberian Twilight",
+  "steam": { "appId": 47700, "buildId": "17459716", "installDir": "Command and Conquer 4 Tiberian Twilight" },
+  "engine": {
+    "name": "SAGE (C&C4 variant)",
+    "evidence": "Data/CNC4.game plus .big containers (Apt.big, English.big, Libraries.big, GlobalStream.big); Data/WorldBuilder.exe; Vivox voice DLLs; the launcher executable is a .NET assembly (imports mscoree.dll only).",
+    "notes": "The installed CNC4.exe is the launcher/support shell, not the simulation. The game payload is Data/CNC4.game, which static analysis has not yet parsed."
+  },
+  "binaries": [
+    {
+      "path": "CNC4.exe",
+      "role": "launcher",
+      "sizeBytes": 10242048,
+      "sha256": "EEE9EFD36CE856C3108F2E44AF31CD8A6CB68E911690D205E324673ADBF0952D",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-21",
+      "steamDrmBind": false,
+      "imports": ["mscoree.dll"]
+    }
+  ],
+  "userState": [],
+  "dependencies": [
+    {
+      "service": "EA Blaze (account, profile, progression)",
+      "endpoint": "launcher.support.blaze.com, rts.eala.ea.com/launcher.support/",
+      "protocol": "Blaze (proprietary), HTTPS for launcher.support",
+      "mandatory": true,
+      "affects": ["account login", "progression", "unlocks", "every game mode"],
+      "evidence": "literal hostnames in CNC4.exe",
+      "communityReplacement": null,
+      "notes": "C&C4 stores progression server-side and requires an EA account. No community Blaze replacement is known, which is why the title is BLOCKED rather than unmeasured."
+    },
+    {
+      "service": "EA patch/content delivery",
+      "endpoint": "downloads.cdn.commandandconquer.com/u/f/cnc/portal/content/patch/patchlink.xml",
+      "protocol": "HTTP",
+      "mandatory": false,
+      "affects": ["patching", "news"],
+      "evidence": "literal URL in CNC4.exe",
+      "communityReplacement": null,
+      "notes": "Patch delivery only."
+    },
+    {
+      "service": "Vivox voice",
+      "endpoint": "not resolved statically (vivoxsdk.dll, vivoxplatform.dll ship in Data)",
+      "protocol": "proprietary",
+      "mandatory": false,
+      "affects": ["voice chat"],
+      "evidence": "shipped Vivox runtime libraries",
+      "communityReplacement": null,
+      "notes": "VOIP only; irrelevant to single-player functionality if the account gate could be passed at all."
+    }
+  ],
+  "capabilities": { "offline": "BLOCKED BY EXTERNAL DEPENDENCY", "lan": "BLOCKED BY EXTERNAL DEPENDENCY", "p2p": "BLOCKED BY EXTERNAL DEPENDENCY" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII string scan of the launcher; directory and shipped-library inventory of Data",
+    "steamDrmBind": false,
+    "limits": "Data/CNC4.game has not been parsed, so deeper dependencies may exist. The account dependency is already enough to block an offline claim."
+  },
+  "notes": "Preservation work here is documentation of the blocker, not an attempt to defeat an account system. If EA ever provides an offline entitlement or the account gate is removed by the publisher, the profile is the place to record it."
+}

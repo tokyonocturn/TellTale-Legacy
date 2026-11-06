@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 2,
+  "id": "pvz-replanted-steam-3654560",
+  "title": "Plants vs. Zombies: Replanted",
+  "steam": { "appId": 3654560, "buildId": "21398230", "installDir": "PVZ Replanted" },
+  "engine": {
+    "name": "Unity (IL2CPP)",
+    "evidence": "Replanted_Data with il2cpp_data, globalgamemanagers, level0; GameAssembly.dll (83 MB) and UnityPlayer.dll (32 MB); Unity crash handler; D3D12/D3D12Core.dll.",
+    "notes": "Not the 2009 game: different engine, different save format, different executable. Treated as an independent title by design."
+  },
+  "binaries": [
+    {
+      "path": "Replanted.exe",
+      "role": "launcher",
+      "sizeBytes": 676832,
+      "sha256": "2B7EF100EC84C215714DE1C928BD107A25A8E46D8D30D6E1EC520D0F81C395D9",
+      "architecture": "x64",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-06-25",
+      "steamDrmBind": false,
+      "imports": ["KERNEL32.dll", "UnityPlayer.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "directory",
+      "path": "%USERPROFILE%\\AppData\\LocalLow\\PopCap\\Plants vs Zombies Replanted",
+      "role": "candidate save/settings location (Unity LocalLow convention)",
+      "evidence": "Unity convention (LocalLow/<company>/<product>); no data exists on this machine yet",
+      "verified": false
+    }
+  ],
+  "dependencies": [],
+  "capabilities": { "offline": "INVENTORY COMPLETE", "lan": "NOT APPLICABLE", "p2p": "NOT APPLICABLE" },
+  "staticAnalysis": {
+    "method": "PE header/import parse of the launcher plus directory inventory of Replanted_Data",
+    "steamDrmBind": false,
+    "limits": "The managed game code is IL2CPP inside GameAssembly.dll; its service strings have not been enumerated yet, so 'no online dependency' is not claimed."
+  },
+  "notes": "Steam entitlement is the platform gate every Steam title in this registry shares, so it is not modelled as a restorable external service: the licence and Steam Offline Mode are the supported path and nothing here bypasses them. Next step is a dependency pass over GameAssembly.dll and a measured offline launch."
+}

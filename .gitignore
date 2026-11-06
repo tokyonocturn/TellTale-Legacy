@@ -1,5 +1,6 @@
 # Local evidence: contains absolute paths, machine state and personal save data
 docs/rea/data/
+docs/preservation/data/
 
 # User save backups and pre-restore safety copies
 backups/

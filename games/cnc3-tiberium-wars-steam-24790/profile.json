@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 2,
+  "id": "cnc3-tiberium-wars-steam-24790",
+  "title": "Command & Conquer 3: Tiberium Wars",
+  "steam": { "appId": 24790, "buildId": "17447444", "installDir": "Command and Conquer 3 Tiberium Wars" },
+  "engine": {
+    "name": "SAGE 2 (RNA)",
+    "evidence": "cnc3game.dat imports d3dx9_29.dll, DINPUT8.dll, DSOUND.dll; content in .big containers; RetailExe/<version>/cnc3game.dat holds the versioned game binary, CNC3.exe is a launcher.",
+    "notes": "The game code is a .dat (PE DLL) selected from RetailExe by version; only 1.10 is treated as the current build here."
+  },
+  "binaries": [
+    {
+      "path": "CNC3.exe",
+      "role": "launcher",
+      "sizeBytes": 9040384,
+      "sha256": "C5A230797104B38A72446983DB37CD828545CBD1A0BEAF08DD7F1DF01792CC22",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-20",
+      "steamDrmBind": false,
+      "imports": ["gdiplus.dll", "ole32.dll", "OLEACC.dll", "SHLWAPI.dll", "USER32.dll"]
+    },
+    {
+      "path": "RetailExe/1.10/cnc3game.dat",
+      "role": "game",
+      "sizeBytes": 16314880,
+      "sha256": "AF568A89B6D0D4F69EC690CF1D443539CB15AFE197B96AC3FC5BF0EC0A56D141",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-19",
+      "steamDrmBind": false,
+      "imports": ["d3dx9_29.dll", "DINPUT8.dll", "DSOUND.dll", "MSVCR80.dll", "NETAPI32.dll", "WSOCK32.dll", "WININET.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "directory",
+      "path": "%USERPROFILE%\\Documents\\Command & Conquer 3 Tiberium Wars\\Profiles",
+      "role": "profiles, save games, replays, screenshots",
+      "evidence": "publisher convention for the SAGE 2 titles; not present on this machine yet",
+      "verified": false
+    }
+  ],
+  "dependencies": [
+    {
+      "service": "GameSpy SDK (auth, presence, peerchat, stats)",
+      "endpoint": "gpcm.gamespy.com, gpsp.gamespy.com, peerchat.gamespy.com, sake.gamespy.net, cc3tibwars.auth.pubsvs.gamespy.com",
+      "protocol": "GameSpy SDK / HTTP",
+      "mandatory": false,
+      "affects": ["online multiplayer", "lobby", "chat", "ranked stats", "achievements reporting"],
+      "evidence": "literal hostnames and service paths in cnc3game.dat",
+      "communityReplacement": "Revora C&C:Online (Tacitus client), still operating for Tiberium Wars in 2026",
+      "notes": "GameSpy shut down 2014-06-30; the remaining online stack is unusable without a replacement."
+    },
+    {
+      "service": "EA FESL (account/entitlement) and messaging",
+      "endpoint": "cnc3-pc.fesl.ea.com, fesl.ea.com, messaging.ea.com",
+      "protocol": "FESL (proprietary)",
+      "mandatory": false,
+      "affects": ["EA account login", "online entitlements"],
+      "evidence": "literal hostnames in cnc3game.dat",
+      "communityReplacement": null,
+      "notes": "Only used by the online account path; no community FESL replacement is claimed here."
+    },
+    {
+      "service": "EA servserv (patch/version and motd)",
+      "endpoint": "servserv.generals.ea.com/servserv/cnc3",
+      "protocol": "HTTP",
+      "mandatory": false,
+      "affects": ["patch check", "news"],
+      "evidence": "literal URL in CNC3.exe",
+      "communityReplacement": null,
+      "notes": "A failed servserv lookup is the offline-launch case this program has to measure."
+    },
+    {
+      "service": "GameSpy advertising",
+      "endpoint": "d.gamespy.com, ingamead.gamespy.com, gamespy.net/ad/",
+      "protocol": "HTTP",
+      "mandatory": false,
+      "affects": ["advertising"],
+      "evidence": "literal hostnames in cnc3game.dat",
+      "communityReplacement": null,
+      "notes": "Non-gameplay."
+    }
+  ],
+  "capabilities": { "offline": "DEPENDENCIES DOCUMENTED", "lan": "NOT INVESTIGATED", "p2p": "NOT INVESTIGATED" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII string scan of launcher and game binaries",
+    "steamDrmBind": false,
+    "limits": "Both binaries are readable. Whether the offline launch stalls on servserv is unknown until a measured run."
+  },
+  "notes": "Kane's Wrath is a separate product with its own binary and product ids; findings here do not transfer to it."
+}

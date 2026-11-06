@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 2,
+  "id": "cnc-renegade-steam-2229890",
+  "title": "Command & Conquer: Renegade",
+  "steam": { "appId": 2229890, "buildId": "17427416", "installDir": "Command & Conquer Renegade" },
+  "engine": {
+    "name": "Westwood 3D (Renegade engine)",
+    "evidence": "Game.exe links 2000-06-01 and imports binkw32/mss32 plus BandTest.dll; content ships as .mix archives under Data; Scripts.dll provides the game's script library; the shipped free dedicated server (RenegadeFDS) runs the same simulation.",
+    "notes": "Three separate executables with three different jobs: Renegade.exe is the Steam launcher (launcher.cfg), Game.exe is the single-player game, and RenegadeFDS/RenegadeServer.exe is the dedicated server."
+  },
+  "binaries": [
+    {
+      "path": "Game.exe",
+      "role": "game",
+      "sizeBytes": 4818992,
+      "sha256": "7FE262E00F8712361DF625FB44C70923FBFE024DB86C62EEFB3767760702C9CB",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2000-06-01",
+      "steamDrmBind": false,
+      "imports": ["BandTest.dll", "binkw32.dll", "mss32.dll", "WSOCK32.dll", "DINPUT8.dll", "DSOUND.dll", "ADVAPI32.dll", "KERNEL32.dll", "USER32.dll"]
+    },
+    {
+      "path": "Renegade.exe",
+      "role": "launcher",
+      "sizeBytes": 4303312,
+      "sha256": "04CB4B8BCEE88A5E8BC000A8CB9C53702D683EA1823EC6BA5F5399254E3BEC73",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-18",
+      "steamDrmBind": true,
+      "imports": ["ADVAPI32.dll", "COMCTL32.dll", "GDI32.dll", "KERNEL32.dll", "SHELL32.dll", "USER32.dll"]
+    },
+    {
+      "path": "RenegadeFDS/RenegadeServer.exe",
+      "role": "dedicated-server",
+      "sizeBytes": 4112450,
+      "sha256": "43BC3740A4F8D65B8925DE7F753215188E359AD742F79B74F929127AC26B0F41",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-18",
+      "steamDrmBind": false,
+      "imports": ["ADVAPI32.dll", "COMCTL32.dll", "GDI32.dll", "KERNEL32.dll", "SHELL32.dll", "USER32.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "registry",
+      "path": "HKCU:\\Software\\Westwood\\Renegade",
+      "role": "game configuration, WOL settings",
+      "evidence": "literal registry paths Software\\Westwood\\Renegade and WOLSettings\\ inside Game.exe",
+      "verified": false
+    },
+    {
+      "kind": "directory",
+      "path": "%USERPROFILE%\\Documents\\Renegade",
+      "role": "candidate save location",
+      "evidence": "unresolved: no save files exist on this machine yet and the string table does not name a save folder. Will be established by measuring the first save, not assumed.",
+      "verified": false
+    }
+  ],
+  "dependencies": [
+    {
+      "service": "GameSpy master server",
+      "endpoint": "master.gamespy.com:27900, master.udpsoft.com:27900",
+      "protocol": "GameSpy query/master (UDP)",
+      "mandatory": false,
+      "affects": ["internet server browser"],
+      "evidence": "literal hostnames in Game.exe",
+      "communityReplacement": "W3D Hub launcher / community GameSpy-style listings; the shipped FDS LAN mode needs no master server",
+      "notes": "Only the internet server list uses this. The in-game LAN browser discovers hosts on the local network instead."
+    },
+    {
+      "service": "Westwood Online (mangler)",
+      "endpoint": "mangler.westwood.com, mangler1..3.westwood.com",
+      "protocol": "proprietary WOL (TCP)",
+      "mandatory": false,
+      "affects": ["WOL login", "quick match", "ladder"],
+      "evidence": "literal hostnames in Game.exe",
+      "communityReplacement": "XWIS (since EA redirected Westwood games there in 2005); not required for LAN or campaign",
+      "notes": "WOL is the only account-based path in the game. GameType = LAN in the dedicated server skips it entirely."
+    },
+    {
+      "service": "GameSpy MOTD / version check / store links",
+      "endpoint": "motd.gamespy.com, www.gamespyarcade.com, www.ea.com, www.fileplanet.com",
+      "protocol": "HTTP",
+      "mandatory": false,
+      "affects": ["news ticker", "version check", "store links"],
+      "evidence": "literal URLs in Game.exe",
+      "communityReplacement": null,
+      "notes": "Cosmetic. The MOTD failure path is the expected offline behaviour."
+    }
+  ],
+  "capabilities": { "offline": "DEPENDENCIES DOCUMENTED", "lan": "IMPLEMENTATION IN PROGRESS", "p2p": "NOT INVESTIGATED" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII string scan of all three binaries, plus INI schema read of the shipped RenegadeFDS configuration",
+    "steamDrmBind": true,
+    "limits": "Renegade.exe is .bind-wrapped (launcher only). Game.exe and RenegadeServer.exe are readable. The LAN host implementation and its measurement are recorded in docs/preservation/03-renegade-lan.md."
+  },
+  "notes": "The dedicated server's shipped Server.ini documents GameType = WOL | GameSpy | LAN. LAN is the mode this program implements: no nickname, password, serial or login server is used."
+}

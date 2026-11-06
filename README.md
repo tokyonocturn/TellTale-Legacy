@@ -130,6 +130,51 @@ The endpoint each build contacts was read from its own executable, not assumed: 
 `meta.telltalegames.com`. Details, including what is measured and what is not, are in
 [docs/rea/20-other-games-offline-patch.md](docs/rea/20-other-games-offline-patch.md).
 
+## Preservation program (multi-game)
+
+The Telltale work above is the origin of a broader program: the same method applied
+to every owned installation, one profile at a time, with an explicit status per
+capability and no claim without a measurement. The Telltale profiles, tools and
+documents are unchanged; the program lives alongside them.
+
+| Document | What it records |
+| --- | --- |
+| [Program and statuses](docs/preservation/00-program.md) | Scope, modes A/B/C, status vocabulary, registry and profile schemas, tools |
+| [Inventory](docs/preservation/01-inventory.md) | Every owned installation: app id, build, size, engine, primary binary and hash |
+| [Dependency map](docs/preservation/02-dependency-map.md) | Endpoints read out of each binary, mandatory or optional, plus the community landscape |
+| [Renegade LAN host](docs/preservation/03-renegade-lan.md) | The first implementation milestone, including the five failures it fixed |
+
+`registry/games.json` lists every title and its per-capability status;
+`games/<id>/profile.json` holds the measured facts for one build. Adding a game
+means adding those two files — no tool changes.
+
+```powershell
+# what is registered, installed, and how far each title has got
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-PreservationStatus.ps1
+
+# measured facts for one installation (read-only)
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-PreservationInventory.ps1 -GameId cnc-renegade-steam-2229890
+
+# fail-closed audit: install, build, binary hashes, mandatory dependencies
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Test-GameOfflineReadiness.ps1 -All
+
+# Renegade: shipped dedicated server, LAN mode, no publisher infrastructure
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Start-RenegadeLanHost.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Start-RenegadeLanHost.ps1 -Status
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Stop-RenegadeLanHost.ps1
+```
+
+**Current state, stated plainly.** Twelve of the fourteen registered titles are
+installed and inventoried; Red Alert 3 is a partial download and the Remastered
+Collection has never been downloaded, so neither is analysed. Renegade's LAN host
+is implemented and measured: it enters LAN mode, binds UDP 3373, creates a channel
+and loads a map, with the installation unmodified. That is **not** `LAN VERIFIED`
+— that needs a client to join and play, which needs a second machine. No title is
+`OFFLINE VERIFIED` yet: offline acceptance runs are the next milestone. C&C4 is
+`BLOCKED BY EXTERNAL DEPENDENCY` (EA Blaze account and server-side progression),
+and Friday the 13th's multiplayer is blocked the same way since its backend closed
+on 2024-12-31.
+
 ## Release packages
 
 Each game is published as a self-contained zip on its tag's release: the shared tooling, the

@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "id": "cnc3-kanes-wrath-steam-24810",
+  "title": "Command & Conquer 3: Kane's Wrath",
+  "steam": { "appId": 24810, "buildId": "17447564", "installDir": "Command and Conquer 3 - Kane's Wrath" },
+  "engine": {
+    "name": "SAGE 2 (RNA), expansion build",
+    "evidence": "cnc3ep1.dat imports the same Direct3D 9/DirectInput/DirectSound set as Tiberium Wars; RetailExe/<version>/cnc3ep1.dat is the versioned game binary; CNC3TW/CNC3.exe is a zero-byte placeholder.",
+    "notes": "Kane's Wrath does not run Tiberium Wars' binary: it has its own product ids and its own data set, so it is profiled separately."
+  },
+  "binaries": [
+    {
+      "path": "CNC3EP1.exe",
+      "role": "launcher",
+      "sizeBytes": 13224400,
+      "sha256": "4869BE4283FD2C8A770B2DA169E6DDAF74FEA279AA51B79A104585943B733135",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-20",
+      "steamDrmBind": true,
+      "imports": ["gdiplus.dll", "ole32.dll", "OLEACC.dll", "SHLWAPI.dll", "USER32.dll"]
+    },
+    {
+      "path": "RetailExe/1.3/cnc3ep1.dat",
+      "role": "game",
+      "sizeBytes": 24252928,
+      "sha256": "1716C954AB80CF05752F4A4A467D34313A95A55A408718270F96382E330572F3",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-19",
+      "steamDrmBind": false,
+      "imports": ["d3dx9_29.dll", "DINPUT8.dll", "DSOUND.dll", "MSVCR80.dll", "NETAPI32.dll", "PSAPI.DLL", "WSOCK32.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "directory",
+      "path": "%USERPROFILE%\\Documents\\Command & Conquer 3 Kane's Wrath\\Profiles",
+      "role": "profiles, save games, replays",
+      "evidence": "publisher convention; not present on this machine yet",
+      "verified": false
+    }
+  ],
+  "dependencies": [
+    {
+      "service": "GameSpy SDK (auth, presence, peerchat, stats)",
+      "endpoint": "cc3xp1.auth.pubsvs.gamespy.com, cc3xp1.comp.pubsvs.gamespy.com, gpcm.gamespy.com, gpsp.com, peerchat.gamespy.com, sake.gamespy.net",
+      "protocol": "GameSpy SDK / HTTP",
+      "mandatory": false,
+      "affects": ["online multiplayer", "lobby", "chat", "ranked stats"],
+      "evidence": "literal hostnames and product-specific service paths in cnc3ep1.dat",
+      "communityReplacement": "Revora C&C:Online (Tacitus client), still operating for Kane's Wrath in 2026",
+      "notes": "Product ids differ from Tiberium Wars (cc3xp1 vs cc3tibwars), confirming the online stack must be treated per build."
+    },
+    {
+      "service": "EA servserv (patch/version and motd)",
+      "endpoint": "servserv.generals.ea.com/servserv/cnc3_ep1",
+      "protocol": "HTTP",
+      "mandatory": false,
+      "affects": ["patch check", "news"],
+      "evidence": "literal URL in CNC3EP1.exe",
+      "communityReplacement": null,
+      "notes": "Same host as Tiberium Wars with a different product path."
+    },
+    {
+      "service": "GameSpy advertising",
+      "endpoint": "d.gamespy.com, ingamead.gamespy.com",
+      "protocol": "HTTP",
+      "mandatory": false,
+      "affects": ["advertising"],
+      "evidence": "literal hostnames in cnc3ep1.dat",
+      "communityReplacement": null,
+      "notes": "Non-gameplay."
+    }
+  ],
+  "capabilities": { "offline": "DEPENDENCIES DOCUMENTED", "lan": "NOT INVESTIGATED", "p2p": "NOT INVESTIGATED" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII string scan of launcher and game binaries",
+    "steamDrmBind": true,
+    "limits": "Launcher is .bind-wrapped; the game binary is readable. RetailExe also contains older 1.0-1.2 builds and .bak copies, which are deliberately not treated as the build this profile describes."
+  },
+  "notes": "RetailExe/1.3/cnc3ep1.dat is the newest versioned binary present; the launcher chooses one at runtime, which a measured session must confirm."
+}

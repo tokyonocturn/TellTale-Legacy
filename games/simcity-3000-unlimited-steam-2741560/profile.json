@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "id": "simcity-3000-unlimited-steam-2741560",
+  "title": "SimCity 3000 Unlimited",
+  "steam": { "appId": 2741560, "buildId": "12966690", "installDir": "SimCity 3000 Unlimited" },
+  "engine": {
+    "name": "Maxis GZ engine",
+    "evidence": "GZ-prefixed runtime DLLs (GZGraphicD, GZResourceD, GZServiceD, GZSOUNDD, GZTOOLSD, GZWIND, GZWWWD), SIM* simulation DLLs (SIMUI, SIMRCI, SIMSPR, SIMBABLD), Apps/SC3U.exe, Res/ data tree, Buildings/ and Cities/ folders.",
+    "notes": "The Steam copy is a GOG-packaged build (goggame-2086050016.dll, 2022 executable). That packaging is part of the installed state and is recorded, not normalised away."
+  },
+  "binaries": [
+    {
+      "path": "Apps/SC3U.exe",
+      "role": "game",
+      "sizeBytes": 1165360,
+      "sha256": "38781BC3C0041A71E9055A490BEDE08E0E5393380782B9F593FDC89136B7C8AF",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2022-11-15",
+      "steamDrmBind": false,
+      "imports": ["UV.dll", "WINMM.dll", "MSVCRT.dll", "USER32.dll", "IMM32.dll", "VERSION.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "directory",
+      "path": "<install>\\Cities",
+      "role": "city save files",
+      "evidence": "Cities directory ships inside the installation",
+      "verified": true
+    },
+    {
+      "kind": "directory",
+      "path": "<install>\\Apps\\HTTPCache",
+      "role": "in-game browser cache",
+      "evidence": "shipped directory used by the retired exchange/chat browser",
+      "verified": true
+    }
+  ],
+  "dependencies": [
+    {
+      "service": "SimCity exchange and chat (retired)",
+      "endpoint": "www.simcity.com:6667 (IRC), www.simcity.com/%language%/exchange/, .../cityfiles.html, .../primarymap.ini",
+      "protocol": "IRC + HTTP",
+      "mandatory": false,
+      "affects": ["city exchange", "chat", "advertisements"],
+      "evidence": "literal URLs and the :6667 endpoint in Apps/SC3U.exe",
+      "communityReplacement": null,
+      "notes": "Dead service from the dial-up era. The single-player simulation and local city saves do not use it."
+    }
+  ],
+  "capabilities": { "offline": "DEPENDENCIES DOCUMENTED", "lan": "NOT APPLICABLE", "p2p": "NOT APPLICABLE" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII string scan",
+    "steamDrmBind": false,
+    "limits": "No runtime observation yet. The GOG wrapper's own behaviour on a machine with no network has not been measured."
+  },
+  "notes": "Nothing to implement unless a measured run shows the browser or wrapper blocking startup; preservation here is verification, not reconstruction."
+}

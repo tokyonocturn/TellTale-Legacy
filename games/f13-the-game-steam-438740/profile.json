@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 2,
+  "id": "f13-the-game-steam-438740",
+  "title": "Friday the 13th: The Game",
+  "steam": { "appId": 438740, "buildId": "7200111", "installDir": "F13Game" },
+  "engine": {
+    "name": "Unreal Engine 4",
+    "evidence": "UE4 layout (Engine/Binaries, Engine/Config, Engine/Extras, SummerCamp/Content, SummerCamp/Binaries/Win64/SummerCamp.exe, Saved/), .pak content, crashpad handlers.",
+    "notes": "UE4 itself is offline-capable; the preservation question is the backend the game used for profiles, progression and matchmaking."
+  },
+  "binaries": [
+    {
+      "path": "SummerCamp/Binaries/Win64/SummerCamp.exe",
+      "role": "game",
+      "sizeBytes": 60655616,
+      "sha256": "04DBB06A6D720837D1F057E23C461E0963F7CD09D6D0D7299F20089225E6B27D",
+      "architecture": "x64",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2021-08-17",
+      "steamDrmBind": false,
+      "imports": ["d3d11.dll", "d3d9.dll", "DXGI.dll", "WS2_32.dll", "WINHTTP.dll", "WININET.dll", "IPHLPAPI.DLL", "KERNEL32.dll", "MSVCP140.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "directory",
+      "path": "<install>\\SummerCamp\\Saved",
+      "role": "engine config, logs and local save data",
+      "evidence": "directory shipped inside the installation",
+      "verified": true
+    }
+  ],
+  "dependencies": [
+    {
+      "service": "Publisher backend (profiles, progression, matchmaking)",
+      "endpoint": "not statically resolvable: the executable links only Windows networking DLLs (WS2_32, WINHTTP) and the service is shut down",
+      "protocol": "proprietary",
+      "mandatory": true,
+      "affects": ["online multiplayer", "progression", "unlocks"],
+      "evidence": "official end of service 2024-12-31; no dedicated server binary in the depots",
+      "communityReplacement": null,
+      "notes": "A fan revival (Friday the 13th: Resurrected) was halted by a cease-and-desist in 2024. No lawful backend exists to implement against."
+    },
+    {
+      "service": "Easy Anti-Cheat",
+      "endpoint": "EAC service (EasyAntiCheat/ ships in the install root)",
+      "protocol": "proprietary",
+      "mandatory": false,
+      "affects": ["online play"],
+      "evidence": "EasyAntiCheat_x64.dll, EasyAntiCheat_Setup.exe, EAC_Launcher.exe",
+      "communityReplacement": null,
+      "notes": "Anti-cheat is not bypassed by this program. It also means unofficial multiplayer workarounds are out of scope."
+    }
+  ],
+  "capabilities": { "offline": "DEPENDENCIES DOCUMENTED", "lan": "BLOCKED BY EXTERNAL DEPENDENCY", "p2p": "BLOCKED BY EXTERNAL DEPENDENCY" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII string scan of SummerCamp.exe and install-tree inventory",
+    "steamDrmBind": false,
+    "limits": "UE4 encrypts .pak content and most service configuration lives in data, so the static picture is incomplete. Offline modes (bots, challenges, virtual cabin) exist in the shipped build and need a measured launch."
+  },
+  "notes": "Preserved surface is the offline suite; multiplayer cannot be restored without a backend that no longer exists and that this project will not fabricate around an anti-cheat."
+}

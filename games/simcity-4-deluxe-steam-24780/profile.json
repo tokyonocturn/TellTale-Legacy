@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "id": "simcity-4-deluxe-steam-24780",
+  "title": "SimCity 4 Deluxe",
+  "steam": { "appId": 24780, "buildId": "4644414", "installDir": "SimCity 4 Deluxe" },
+  "engine": {
+    "name": "Maxis SC4 engine",
+    "evidence": "Apps/SimCity 4.exe (7.5 MB), Regions/ and Plugins/ content trees, Radio/ music, Fonts/, Sku_Data/; plugin architecture is the game's own documented extension point.",
+    "notes": "Deluxe bundles the Rush Hour expansion in one executable."
+  },
+  "binaries": [
+    {
+      "path": "Apps/SimCity 4.exe",
+      "role": "game",
+      "sizeBytes": 7876608,
+      "sha256": "F9B059D29940D1A28C89E6D6A7AB147E9762CD03134CDBAF02BA0E0142E1A176",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2010-06-11",
+      "steamDrmBind": true,
+      "imports": ["DSOUND.dll", "OPENGL32.dll", "MSVFW32.dll", "WININET.dll", "WINMM.dll", "USER32.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "directory",
+      "path": "%USERPROFILE%\\Documents\\SimCity 4",
+      "role": "Regions, Plugins and saved cities",
+      "evidence": "publisher convention (the game writes Regions/Plugins under My Documents); directory not present on this machine yet",
+      "verified": false
+    },
+    {
+      "kind": "directory",
+      "path": "<install>\\Regions",
+      "role": "shipped region templates",
+      "evidence": "shipped directory",
+      "verified": true
+    }
+  ],
+  "dependencies": [
+    {
+      "service": "None observed",
+      "endpoint": "maxis.com (text only); WININET is imported for the in-game browser/help links",
+      "protocol": "HTTP",
+      "mandatory": false,
+      "affects": ["help links"],
+      "evidence": "string scan of Apps/SimCity 4.exe produced no service hostname other than maxis.com",
+      "communityReplacement": null,
+      "notes": "No authentication, no telemetry, no content delivery. The executable is .bind-wrapped, so the absence of strings is weaker evidence than for an unwrapped binary."
+    }
+  ],
+  "capabilities": { "offline": "DEPENDENCIES DOCUMENTED", "lan": "NOT APPLICABLE", "p2p": "NOT APPLICABLE" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII string scan",
+    "steamDrmBind": true,
+    "limits": "Steam's .bind wrapper hides part of the executable; only the wrapper-visible strings were scanned."
+  },
+  "notes": "Expected to be the easiest full offline verification after PvZ: a single executable, local saves and a plugin folder that users already manage themselves."
+}

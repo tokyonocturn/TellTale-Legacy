@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "id": "nfs-rivals-steam-1262600",
+  "title": "Need for Speed: Rivals",
+  "steam": { "appId": 1262600, "buildId": "10351327", "installDir": "Need for Speed(TM) Rivals" },
+  "engine": {
+    "name": "Frostbite 3",
+    "evidence": "Data/cas.cat plus numbered .cas archives (content-addressed storage), Core/Qt* runtime for the shell, Core/Activation*.dll, d3dcompiler_46.dll, __Installer and __overlay folders.",
+    "notes": "Two executables ship: NFS14.exe (x64) and NFS14_x86.exe (x86). Both load an activation library, which is the interesting part for offline operation."
+  },
+  "binaries": [
+    {
+      "path": "NFS14.exe",
+      "role": "game",
+      "sizeBytes": 30449280,
+      "sha256": "66B0CD705D8E1B1361B7EF8992B71EF4196C2B438A6CADD17F78801EC6F728AA",
+      "architecture": "x64",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2014-02-04",
+      "steamDrmBind": false,
+      "imports": ["Core/Activation64.dll", "KERNEL32.dll", "USER32.dll"]
+    },
+    {
+      "path": "NFS14_x86.exe",
+      "role": "game-x86",
+      "sizeBytes": 23109248,
+      "sha256": "9F399CE215FF20D028B4FF78B71337687681266609C9D8A20A824B453891D0F7",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2014-02-04",
+      "steamDrmBind": false,
+      "imports": ["Core/Activation.dll", "KERNEL32.dll", "USER32.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "directory",
+      "path": "%USERPROFILE%\\Documents\\Ghost Games\\Need for Speed(TM) Rivals",
+      "role": "settings and save game",
+      "evidence": "publisher convention (Ghost Games folder under My Documents); not present on this machine yet",
+      "verified": false
+    }
+  ],
+  "dependencies": [
+    {
+      "service": "EA GOS redirector (online session routing)",
+      "endpoint": "gosredirector.ea.com, gosredirector.online.ea.com, gosca.ea.com:44125/redirector",
+      "protocol": "GOS/proprietary (TCP)",
+      "mandatory": false,
+      "affects": ["AllDrive online sessions", "matchmaking"],
+      "evidence": "literal hostnames in both executables",
+      "communityReplacement": "TurboRivals (unofficial community AllDrive replacement; not needed for solo play, not verified here)",
+      "notes": "EA switched off Rivals' online services on 2025-10-07, so these endpoints are dead by publisher decision rather than by failure."
+    },
+    {
+      "service": "EA Blaze/telemetry",
+      "endpoint": "peach.online.ea.com, elephant.online.ea.com/bugsentry, reports.tools.gos.ea.com/bugsentry",
+      "protocol": "HTTPS",
+      "mandatory": false,
+      "affects": ["telemetry", "bug reporting"],
+      "evidence": "literal hostnames in both executables",
+      "communityReplacement": null,
+      "notes": "Diagnostics only."
+    },
+    {
+      "service": "EA activation",
+      "endpoint": "Core/Activation64.dll, Core/Activation.dll (endpoint not resolved statically)",
+      "protocol": "proprietary",
+      "mandatory": true,
+      "affects": ["launch"],
+      "evidence": "both executables import an activation library; Steam's store page still states an EA account is required",
+      "communityReplacement": null,
+      "notes": "Whether a fully offline launch passes this gate is unknown. It is treated as mandatory and unmeasured rather than assumed either way."
+    }
+  ],
+  "capabilities": { "offline": "REVERSE ENGINEERING IN PROGRESS", "lan": "NOT INVESTIGATED", "p2p": "NOT INVESTIGATED" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII string scan of both executables",
+    "steamDrmBind": false,
+    "limits": "Activation logic is inside Core/Activation*.dll, which has not been parsed. No runtime observation yet."
+  },
+  "notes": "Solo AllDrive against AI is a designed mode, but the account/activation gate has to be measured before any offline claim."
+}

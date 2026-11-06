@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 2,
+  "id": "cnc-zero-hour-steam-2732960",
+  "title": "Command & Conquer: Generals - Zero Hour",
+  "steam": { "appId": 2732960, "buildId": "17435311", "installDir": "Command & Conquer Generals - Zero Hour" },
+  "engine": {
+    "name": "SAGE (strategy action game engine), expansion build",
+    "evidence": "Game.dat imports d3d8.dll, mss32.dll, binkw32.dll and the GameSpy SDK; ZH_Generals.pak content; own WorldBuilder.exe.",
+    "notes": "Separate executable and content map from Generals. The presence of a shared engine name is not evidence that the binaries or services are interchangeable."
+  },
+  "binaries": [
+    {
+      "path": "Generals.exe",
+      "role": "launcher",
+      "sizeBytes": 4303312,
+      "sha256": "7B075B9F0BAA9DF81651C0C9DD7D8C445454AE1B2452B928F4A1D9332E9CCECE",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-19",
+      "steamDrmBind": true,
+      "imports": ["ADVAPI32.dll", "COMCTL32.dll", "GDI32.dll", "KERNEL32.dll", "SHELL32.dll", "USER32.dll"]
+    },
+    {
+      "path": "Game.dat",
+      "role": "game",
+      "sizeBytes": 6545984,
+      "sha256": "420FBA1DBDC4C14E2418C2B0D3010B9FAC6F314EAFA1F3A101805B8D98883EA1",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-20",
+      "steamDrmBind": false,
+      "imports": ["COMCTL32.dll", "DINPUT8.dll", "DSOUND.dll", "WSOCK32.dll", "WININET.dll", "mss32.dll", "binkw32.dll", "MSVCRT.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "directory",
+      "path": "%USERPROFILE%\\Documents\\Command and Conquer Generals Zero Hour Data",
+      "role": "options, save games and replays",
+      "evidence": "publisher convention for SAGE titles; not present on this machine yet",
+      "verified": false
+    }
+  ],
+  "dependencies": [
+    {
+      "service": "GameSpy master/lobby (Zero Hour product id)",
+      "endpoint": "gpcm.gamespy.com, gpsp.gamespy.com",
+      "protocol": "GameSpy SDK",
+      "mandatory": false,
+      "affects": ["online multiplayer", "lobby"],
+      "evidence": "literal hostnames in Game.dat",
+      "communityReplacement": "Generals Online (playgenerals.online)",
+      "notes": "Uses ccgenzh product paths for stats, so the Zero Hour identifiers are distinct from Generals."
+    },
+    {
+      "service": "GameSpy statistics and advertising",
+      "endpoint": "gamestats.gamespy.com/ccgenzh/display.html, d.gamespy.com",
+      "protocol": "HTTP",
+      "mandatory": false,
+      "affects": ["stats", "advertising"],
+      "evidence": "literal hostnames in Game.dat",
+      "communityReplacement": null,
+      "notes": "Dead endpoints; expected to fail harmlessly, to be confirmed at runtime."
+    }
+  ],
+  "capabilities": { "offline": "REVERSE ENGINEERING IN PROGRESS", "lan": "NOT INVESTIGATED", "p2p": "NOT INVESTIGATED" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII and UTF-16 string scan of both binaries",
+    "steamDrmBind": true,
+    "limits": "Launcher is .bind-wrapped; Game.dat is readable. No runtime observation yet."
+  },
+  "notes": "PunkBuster (P2XDLL.DLL) ships with the game and is relevant to any multiplayer work: it is an anti-cheat component, not a preservation obstacle for single player."
+}

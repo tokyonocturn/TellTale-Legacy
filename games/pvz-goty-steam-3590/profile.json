@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 2,
+  "id": "pvz-goty-steam-3590",
+  "title": "Plants vs. Zombies: Game of the Year",
+  "steam": { "appId": 3590, "buildId": "11226", "installDir": "Plants Vs Zombies" },
+  "engine": {
+    "name": "PopCap SexyAppFramework",
+    "evidence": "Small native executable (5.3 MB) with BASS audio (bass.dll), properties/default.xml, properties/Layout.xml UI definitions and partner.xml; no engine payload file of its own.",
+    "notes": "Simple, self-contained 2D engine. Everything the game needs ships in the installation."
+  },
+  "binaries": [
+    {
+      "path": "PlantsVsZombies.exe",
+      "role": "game",
+      "sizeBytes": 5296312,
+      "sha256": "868F8E2BAB0D6A7EF8AFC4C5960C608ECCEF82BD086BD6E0C0E2670199A5CA45",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2008-10-08",
+      "steamDrmBind": false,
+      "imports": ["WININET.dll", "WSOCK32.dll", "WINMM.dll", "ole32.dll", "OLEAUT32.dll", "USER32.dll"]
+    }
+  ],
+  "userState": [],
+  "dependencies": [
+    {
+      "service": "PopCap registration / news",
+      "endpoint": "www.popcap.com/register.php?thegame=, beta.popcap.com, www.popcap.com",
+      "protocol": "HTTP (WININET)",
+      "mandatory": false,
+      "affects": ["registration prompt", "news"],
+      "evidence": "literal URLs in PlantsVsZombies.exe",
+      "communityReplacement": null,
+      "notes": "Reached from an optional menu action; no campaign or save path uses it. Offline behaviour is expected to be a failed request, to be confirmed by measurement."
+    }
+  ],
+  "capabilities": { "offline": "DEPENDENCIES DOCUMENTED", "lan": "NOT APPLICABLE", "p2p": "NOT APPLICABLE" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII string scan",
+    "steamDrmBind": false,
+    "limits": "Save location is not yet established on this machine because the game has never been launched here. The profile will record it once measured rather than guessing."
+  },
+  "notes": "Best first offline-acceptance candidate: no mandatory service, no launcher layer, a single executable."
+}

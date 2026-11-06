@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 2,
+  "id": "cnc-generals-steam-2229870",
+  "title": "Command & Conquer: Generals",
+  "steam": { "appId": 2229870, "buildId": "17435253", "installDir": "Command and Conquer Generals" },
+  "engine": {
+    "name": "SAGE (Strategy Action Game Engine)",
+    "evidence": "Game.dat imports d3d8.dll, mss32.dll, binkw32.dll and the GameSpy SDK; W3D.big/Window.big content containers; WorldBuilder.exe ships with the game.",
+    "notes": "Generals.exe is a launcher (launcher.cfg/launcher.bmp), not the game. The renderer and simulation live in Game.dat, which is a PE DLL loaded by that launcher."
+  },
+  "binaries": [
+    {
+      "path": "Generals.exe",
+      "role": "launcher",
+      "sizeBytes": 4303312,
+      "sha256": "66D92E702930BC853466FB5C3EE45DC52CF8AE01D1D260DDCBC8C38649A99BC9",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-17",
+      "steamDrmBind": true,
+      "imports": ["ADVAPI32.dll", "COMCTL32.dll", "GDI32.dll", "KERNEL32.dll", "SHELL32.dll", "USER32.dll"]
+    },
+    {
+      "path": "Game.dat",
+      "role": "game",
+      "sizeBytes": 12169792,
+      "sha256": "88B03CFB9851C84E1A6B0337E8CAE3CDD1C556A8963492248AF18FE6E07764B1",
+      "architecture": "x86",
+      "subsystem": "GUI",
+      "linkTimestampUtc": "2025-02-20",
+      "steamDrmBind": false,
+      "imports": ["d3d8.dll", "DINPUT8.dll", "DSOUND.dll", "WSOCK32.dll", "WININET.dll", "mss32.dll", "binkw32.dll", "MSVCRT.dll"]
+    }
+  ],
+  "userState": [
+    {
+      "kind": "directory",
+      "path": "%USERPROFILE%\\Documents\\Command and Conquer Generals Data",
+      "role": "options, save games and replays",
+      "evidence": "publisher convention for SAGE titles; the folder does not exist on this machine yet because the title has never been launched here",
+      "verified": false
+    }
+  ],
+  "dependencies": [
+    {
+      "service": "GameSpy master/lobby",
+      "endpoint": "gpcm.gamespy.com, gpsp.gamespy.com",
+      "protocol": "GameSpy SDK (binary)",
+      "mandatory": false,
+      "affects": ["online multiplayer", "lobby", "player identity"],
+      "evidence": "literal hostnames in Game.dat",
+      "communityReplacement": "Generals Online (playgenerals.online) after Revora retired Generals/Zero Hour from C&C:Online in 2026",
+      "notes": "The GameSpy service was shut down on 2014-06-30. Nothing in the campaign path requires it, but that has not been measured here."
+    },
+    {
+      "service": "GameSpy statistics and in-game advertising",
+      "endpoint": "gamestats.gamespy.com, d.gamespy.com",
+      "protocol": "HTTP",
+      "mandatory": false,
+      "affects": ["stats", "advertising"],
+      "evidence": "literal hostnames in Game.dat",
+      "communityReplacement": null,
+      "notes": "Optional telemetry/advertising calls; a failure degrades nothing playable."
+    }
+  ],
+  "capabilities": { "offline": "REVERSE ENGINEERING IN PROGRESS", "lan": "NOT INVESTIGATED", "p2p": "NOT INVESTIGATED" },
+  "staticAnalysis": {
+    "method": "PE header/import parse plus ASCII and UTF-16 string scan of both binaries",
+    "steamDrmBind": true,
+    "limits": "Generals.exe is .bind-wrapped by Steam, so its code is not readable statically; Game.dat is readable and carries the endpoint strings above. No runtime observation has been recorded yet."
+  },
+  "notes": "Native LAN mode is advertised in the game's own menus and would not need GameSpy, but that is a claim to measure, not a finding."
+}

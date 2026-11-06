@@ -1137,6 +1137,326 @@ try {
         $result = Invoke-GamePatch -Fixture $fixture -Action 'Remove' -HostsPath $hostsFixture -ManifestPath $gamePatchManifest
         Assert-Equal 26 $result.ExitCode 'removing a patch that was never installed must be refused'
     }
+
+    # ------------------------------------------------ preservation program
+
+    Write-Host ''
+    Write-Host 'Preservation registry and profiles'
+
+    Import-Module (Join-Path $tools 'Preservation.Common.psm1') -Force
+
+    $registryPath = Join-Path $repoRoot 'registry\games.json'
+    $gamesRoot = Join-Path $repoRoot 'games'
+
+    Test-Case 'Game registry is valid, unique and status-consistent' {
+        Assert-True (Test-Path -LiteralPath $registryPath) 'registry/games.json missing'
+        $registry = Get-Content -LiteralPath $registryPath -Raw | ConvertFrom-Json
+        Assert-Equal 1 $registry.schemaVersion 'registry schemaVersion'
+        $ids = @($registry.games | ForEach-Object { [string]$_.id })
+        Assert-Equal $ids.Count (@($ids | Select-Object -Unique).Count) 'game ids must be unique'
+        Assert-True ($ids.Count -ge 14) 'expected every initial mission target in the registry'
+        $vocabulary = @($registry.statusVocabulary)
+        foreach ($entry in $registry.games) {
+            foreach ($capability in @('offline', 'lan', 'p2p')) {
+                $value = [string]$entry.capabilities.$capability
+                Assert-True ($vocabulary -contains $value) ('unknown ' + $capability + ' status in ' + $entry.id + ': ' + $value)
+            }
+            Assert-True ([int]$entry.steamAppId -gt 0) ('missing app id: ' + $entry.id)
+            if ($entry.installed) {
+                Assert-True ([bool]$entry.profile) ('installed title without a profile: ' + $entry.id)
+                Assert-True (Test-Path -LiteralPath (Resolve-RepoPath -Path $entry.profile)) ('profile missing on disk: ' + $entry.id)
+            } else {
+                Assert-True (-not $entry.profile) ('an uninstalled title must not claim a profile: ' + $entry.id)
+                Assert-True ($null -eq $entry.steamBuildId) ('an uninstalled title must not claim a build: ' + $entry.id)
+            }
+        }
+    }
+
+    Test-Case 'Every game profile is schema-valid and matches its registry entry' {
+        $registry = Get-Content -LiteralPath $registryPath -Raw | ConvertFrom-Json
+        $directories = @(Get-ChildItem -LiteralPath $gamesRoot -Directory)
+        Assert-True ($directories.Count -ge 12) 'expected one profile per installed title'
+        foreach ($directory in $directories) {
+            $profilePath = Join-Path $directory.FullName 'profile.json'
+            Assert-True (Test-Path -LiteralPath $profilePath) ('missing profile.json in ' + $directory.Name)
+            $profile = Get-Content -LiteralPath $profilePath -Raw | ConvertFrom-Json
+            Assert-Equal 2 $profile.schemaVersion ('schemaVersion in ' + $directory.Name)
+            Assert-Equal $directory.Name $profile.id ('profile id must match its directory: ' + $directory.Name)
+            $entry = @($registry.games | Where-Object { $_.id -eq $profile.id })
+            Assert-Equal 1 $entry.Count ('profile is not registered: ' + $profile.id)
+            Assert-Equal $entry[0].steamAppId $profile.steam.appId ('app id mismatch: ' + $profile.id)
+            foreach ($binary in @($profile.binaries)) {
+                Assert-True ([string]$binary.sha256 -match '^[0-9a-fA-F]{64}$') ('bad sha256 for ' + $profile.id + '/' + $binary.path)
+                Assert-True ([int64]$binary.sizeBytes -gt 0) ('bad size for ' + $profile.id + '/' + $binary.path)
+                Assert-True ([bool]$binary.role) ('missing role for ' + $profile.id + '/' + $binary.path)
+            }
+            foreach ($dependency in @($profile.dependencies)) {
+                Assert-True ([bool]$dependency.service) ('dependency without a service name: ' + $profile.id)
+                Assert-True ($null -ne $dependency.mandatory) ('dependency without a mandatory flag: ' + $profile.id)
+            }
+        }
+    }
+
+    Write-Host ''
+    Write-Host 'Preservation tooling against a fixture tree'
+
+    $preservationFixture = Join-Path $script:sandbox 'preservation-fixture'
+    $fixtureGame = Join-Path $preservationFixture 'game'
+    New-Item -ItemType Directory -Path (Join-Path $fixtureGame 'Data') -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $fixtureGame 'Game.exe') -Value ('MZ-fixture-header-' * 64) -NoNewline
+    Set-Content -LiteralPath (Join-Path $fixtureGame 'RenegadeServer.exe') -Value ('MZ-fixture-server-' * 64) -NoNewline
+    Set-Content -LiteralPath (Join-Path $fixtureGame 'Scripts.dll') -Value 'not-a-pe' -NoNewline
+    Set-Content -LiteralPath (Join-Path $fixtureGame 'Data\C&C_Field.mix') -Value 'fixture-map' -NoNewline
+    $fixtureGameExe = Join-Path $fixtureGame 'Game.exe'
+    $fixtureServerExe = Join-Path $fixtureGame 'RenegadeServer.exe'
+    $fixtureGameHash = (Get-FileHash -LiteralPath $fixtureGameExe -Algorithm SHA256).Hash
+    $fixtureServerHash = (Get-FileHash -LiteralPath $fixtureServerExe -Algorithm SHA256).Hash
+    $fixtureRegistry = Join-Path $preservationFixture 'games.json'
+    $fixtureProfile = Join-Path $preservationFixture 'fixture-profile.json'
+    New-Item -ItemType Directory -Path (Join-Path $preservationFixture 'out') -Force | Out-Null
+
+    $fixtureProfileDocument = [ordered]@{
+        schemaVersion = 2
+        id            = 'fixture-game'
+        title         = 'Fixture Game'
+        steam         = [ordered]@{ appId = 999001; buildId = '1'; installDir = 'game' }
+        engine        = [ordered]@{ name = 'fixture'; evidence = 'fixture'; notes = '' }
+        binaries      = @(
+            [ordered]@{ path = 'Game.exe'; role = 'game'; sizeBytes = (Get-Item -LiteralPath $fixtureGameExe).Length; sha256 = $fixtureGameHash }
+            [ordered]@{ path = 'RenegadeServer.exe'; role = 'dedicated-server'; sizeBytes = (Get-Item -LiteralPath $fixtureServerExe).Length; sha256 = $fixtureServerHash }
+        )
+        userState     = @()
+        dependencies  = @([ordered]@{ service = 'none'; endpoint = 'none'; protocol = 'none'; mandatory = $false; affects = @(); evidence = 'fixture'; communityReplacement = $null; notes = '' })
+        capabilities  = [ordered]@{ offline = 'INVENTORY COMPLETE'; lan = 'NOT INVESTIGATED'; p2p = 'NOT INVESTIGATED' }
+    }
+    $fixtureProfileDocument | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $fixtureProfile -Encoding UTF8
+    $fixtureRegistryDocument = [ordered]@{
+        schemaVersion    = 1
+        statusVocabulary = @('NOT INVESTIGATED', 'INVENTORY COMPLETE', 'DEPENDENCIES DOCUMENTED', 'IMPLEMENTATION IN PROGRESS')
+        games            = @([ordered]@{
+            id            = 'fixture-game'
+            title         = 'Fixture Game'
+            steamAppId    = 999001
+            steamBuildId  = '1'
+            installDir    = 'game'
+            installPath   = $fixtureGame
+            installed     = $true
+            engine        = 'fixture'
+            adapter       = 'fixture'
+            profile       = $fixtureProfile
+            capabilities  = [ordered]@{ offline = 'INVENTORY COMPLETE'; lan = 'NOT INVESTIGATED'; p2p = 'NOT INVESTIGATED' }
+        })
+    }
+    $fixtureRegistryDocument | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $fixtureRegistry -Encoding UTF8
+
+    Test-Case 'Inventory records files, classes and the profile hash' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-PreservationInventory.ps1') -ScriptArguments @(
+            '-GameId', 'fixture-game', '-RegistryPath', $fixtureRegistry, '-InstallRoot', $fixtureGame,
+            '-OutputDirectory', (Join-Path $preservationFixture 'out')
+        )
+        Assert-Equal 0 $result.ExitCode ("inventory exit code: " + $result.StdErr)
+        $report = Get-Content -LiteralPath (Join-Path $preservationFixture 'out\fixture-game.json') -Raw | ConvertFrom-Json
+        Assert-Equal 'fixture-game' $report.gameId 'gameId'
+        Assert-True ($report.summary.fileCount -ge 4) 'all fixture files must be recorded'
+        $exe = @($report.files | Where-Object { $_.path -eq 'Game.exe' })[0]
+        Assert-Equal 'executable' $exe.class 'Game.exe class'
+        Assert-Equal $fixtureGameHash $exe.sha256 'profile binary hash must be recorded'
+        $archive = @($report.files | Where-Object { $_.path -eq 'Data/C&C_Field.mix' })[0]
+        Assert-Equal 'archive' $archive.class 'map must be classified as an archive'
+    }
+
+    Test-Case '-All inventories each game from its own install root' {
+        # Regression: the script's -InstallRoot parameter and a local $installRoot
+        # were the same PowerShell variable, so every game after the first was
+        # inventoried from the first game's directory.
+        $secondGame = Join-Path $preservationFixture 'game-two'
+        New-Item -ItemType Directory -Path $secondGame -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $secondGame 'Second.exe') -Value ('MZ-second-' * 64) -NoNewline
+        $secondExe = Join-Path $secondGame 'Second.exe'
+        $secondProfile = Join-Path $preservationFixture 'second-profile.json'
+        [ordered]@{
+            schemaVersion = 2
+            id            = 'fixture-game-two'
+            title         = 'Fixture Game Two'
+            steam         = [ordered]@{ appId = 999002; buildId = '1'; installDir = 'game-two' }
+            engine        = [ordered]@{ name = 'fixture'; evidence = 'fixture'; notes = '' }
+            binaries      = @([ordered]@{ path = 'Second.exe'; role = 'game'; sizeBytes = (Get-Item -LiteralPath $secondExe).Length; sha256 = (Get-FileHash -LiteralPath $secondExe -Algorithm SHA256).Hash })
+            userState     = @()
+            dependencies  = @()
+            capabilities  = [ordered]@{ offline = 'INVENTORY COMPLETE'; lan = 'NOT APPLICABLE'; p2p = 'NOT APPLICABLE' }
+        } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $secondProfile -Encoding UTF8
+
+        $multiRegistry = Join-Path $preservationFixture 'multi-games.json'
+        $base = Get-Content -LiteralPath $fixtureRegistry -Raw | ConvertFrom-Json
+        $secondEntry = [ordered]@{
+            id           = 'fixture-game-two'
+            title        = 'Fixture Game Two'
+            steamAppId   = 999002
+            steamBuildId = '1'
+            installDir   = 'game-two'
+            installPath  = $secondGame
+            installed    = $true
+            engine       = 'fixture'
+            adapter      = $null
+            profile      = $secondProfile
+            capabilities = [ordered]@{ offline = 'INVENTORY COMPLETE'; lan = 'NOT APPLICABLE'; p2p = 'NOT APPLICABLE' }
+        }
+        [ordered]@{
+            schemaVersion    = 1
+            statusVocabulary = @($base.statusVocabulary)
+            games            = @(@($base.games)[0], $secondEntry)
+        } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $multiRegistry -Encoding UTF8
+
+        $allOutput = Join-Path $preservationFixture 'out-all'
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-PreservationInventory.ps1') -ScriptArguments @(
+            '-All', '-RegistryPath', $multiRegistry, '-OutputDirectory', $allOutput
+        )
+        Assert-Equal 0 $result.ExitCode ("inventory -All exit code: " + $result.StdErr)
+        $first = Get-Content -LiteralPath (Join-Path $allOutput 'fixture-game.json') -Raw | ConvertFrom-Json
+        $second = Get-Content -LiteralPath (Join-Path $allOutput 'fixture-game-two.json') -Raw | ConvertFrom-Json
+        Assert-True ($first.gameRoot -ne $second.gameRoot) '-All must not reuse the first install root'
+        Assert-True ($second.gameRoot -like '*game-two*') 'the second report must point at its own root'
+
+        $readinessAll = Invoke-Script -ScriptPath (Join-Path $tools 'Test-GameOfflineReadiness.ps1') -ScriptArguments @(
+            '-All', '-RegistryPath', $multiRegistry, '-SkipSteamChecks', '-OutputDirectory', $allOutput
+        )
+        Assert-Equal 0 $readinessAll.ExitCode ("readiness -All exit code: " + $readinessAll.StdErr)
+        Assert-True ($readinessAll.StdOut -match 'Fixture Game Two') 'readiness -All must audit every registered game'
+    }
+
+    $readinessScript = Join-Path $tools 'Test-GameOfflineReadiness.ps1'
+    $readinessArgs = @(
+        '-GameId', 'fixture-game', '-RegistryPath', $fixtureRegistry, '-InstallRoot', $fixtureGame,
+        '-SkipSteamChecks', '-OutputDirectory', (Join-Path $preservationFixture 'out')
+    )
+
+    Test-Case 'Readiness passes a matching fixture and reports it as ready' {
+        $result = Invoke-Script -ScriptPath $readinessScript -ScriptArguments $readinessArgs
+        Assert-Equal 0 $result.ExitCode ("readiness exit code: " + $result.StdErr)
+        $report = Get-Content -LiteralPath (Join-Path $preservationFixture 'out\fixture-game.json') -Raw | ConvertFrom-Json
+        Assert-Equal 'ready' $report.verdict 'verdict'
+    }
+
+    Test-Case 'Readiness fails closed on a changed binary' {
+        Set-Content -LiteralPath $fixtureGameExe -Value 'the installation changed' -NoNewline
+        $result = Invoke-Script -ScriptPath $readinessScript -ScriptArguments $readinessArgs
+        Assert-Equal 2 $result.ExitCode 'a changed binary must be a failure, not a warning'
+        $report = Get-Content -LiteralPath (Join-Path $preservationFixture 'out\fixture-game.json') -Raw | ConvertFrom-Json
+        Assert-Equal 'blocked' $report.verdict 'verdict after tamper'
+        Assert-Equal 1 @($report.checks | Where-Object { $_.check -eq 'binary:Game.exe' -and $_.status -eq 'fail' }).Count 'the changed binary must be the failing check'
+        Set-Content -LiteralPath $fixtureGameExe -Value ('MZ-fixture-header-' * 64) -NoNewline
+    }
+
+    Test-Case 'Readiness treats a mandatory dependency as blocking' {
+        $blockedProfile = Join-Path $preservationFixture 'blocked-profile.json'
+        $blockedRegistry = Join-Path $preservationFixture 'blocked-games.json'
+        $profile = Get-Content -LiteralPath $fixtureProfile -Raw | ConvertFrom-Json
+        $profile.dependencies = @([pscustomobject]@{ service = 'publisher account'; endpoint = 'auth.example.invalid'; protocol = 'https'; mandatory = $true; affects = @('launch'); evidence = 'fixture'; communityReplacement = $null; notes = '' })
+        $profile | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $blockedProfile -Encoding UTF8
+        $registry = Get-Content -LiteralPath $fixtureRegistry -Raw | ConvertFrom-Json
+        $registry.games[0].profile = $blockedProfile
+        $registry | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $blockedRegistry -Encoding UTF8
+        $result = Invoke-Script -ScriptPath $readinessScript -ScriptArguments @(
+            '-GameId', 'fixture-game', '-RegistryPath', $blockedRegistry, '-InstallRoot', $fixtureGame,
+            '-SkipSteamChecks', '-OutputDirectory', (Join-Path $preservationFixture 'out')
+        )
+        Assert-Equal 2 $result.ExitCode 'a mandatory dependency must block the verdict'
+        Assert-True ($result.StdOut -match 'mandatory external dependency') 'the blocker must be named'
+    }
+
+    Test-Case 'Status tool lists registry entries as JSON' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Get-PreservationStatus.ps1') -ScriptArguments @('-Json', '-RegistryPath', $fixtureRegistry)
+        Assert-Equal 0 $result.ExitCode ("status exit code: " + $result.StdErr)
+        $json = $result.StdOut | ConvertFrom-Json
+        Assert-Equal 1 @($json.games).Count 'fixture registry has one game'
+        Assert-Equal 'fixture-game' @($json.games)[0].Id 'status must report the registered id'
+    }
+
+    Write-Host ''
+    Write-Host 'Renegade LAN host generation'
+
+    Test-Case 'Generated Server.ini is CRLF, LAN-mode and has no WOL credentials' {
+        $text = New-RenegadeLanServerIni -Port 7777
+        Assert-True ($text -match "`r`n") 'generated INI must use CRLF'
+        Assert-True ($text -notmatch "[^`r]`n") 'no bare LF may appear in the generated INI'
+        $ini = ConvertFrom-IniText -Text $text
+        Assert-Equal 'LAN' $ini['Server']['GameType'] 'GameType'
+        Assert-Equal '7777' $ini['Server']['Port'] 'Port'
+        Assert-Equal 'false' $ini['Server']['AllowRemoteAdmin'] 'remote admin must default off'
+        Assert-Equal '' $ini['Server']['Nickname'] 'LAN mode must not name a WOL account'
+        Assert-Equal '' $ini['Server']['Serial'] 'LAN mode must not carry a serial'
+        Assert-Equal '0' $ini['Slave1']['Enable'] 'slave servers must default off'
+        Assert-Equal '../svrcfg_lan.ini'.Replace('/', '\') $ini['Server']['Config'] 'the settings file must resolve outside data\'
+    }
+
+    Test-Case 'Generated game settings carry a non-empty map cycle' {
+        $text = New-RenegadeLanGameConfig -MapName 'C&C_Field.mix' -MapCycle @('C&C_Field.mix', 'C&C_Walls.mix')
+        Assert-True ($text -notmatch "[^`r]`n") 'no bare LF may appear in the generated settings'
+        Assert-True ($text.EndsWith("`r`n")) 'the file must end with a line break'
+        Assert-True ($text -match 'IsClanGame=no\r\nMapName00=') 'the cycle must start on its own line'
+        $ini = ConvertFrom-IniText -Text $text
+        Assert-Equal 'C&C_Field.mix' $ini['Settings']['MapName'] 'MapName'
+        Assert-Equal 'C&C_Field.mix' $ini['Settings']['MapName00'] 'first cycle entry'
+        Assert-Equal 'C&C_Walls.mix' $ini['Settings']['MapName01'] 'second cycle entry'
+        Assert-Equal 'yes' $ini['Settings']['IsDedicated'] 'dedicated flag'
+    }
+
+    Test-Case 'LAN host refuses to place its state inside the installation' {
+        $result = $null
+        try {
+            $null = Start-RenegadeLanHost -GameId 'fixture-game' -RegistryPath $fixtureRegistry -InstallRoot $fixtureGame `
+                -StatePath (Join-Path $fixtureGame 'state') -ObserveSeconds 1
+            throw 'the host must refuse a state directory inside the installation'
+        } catch {
+            Assert-True ($_.Exception.Message -match 'Refusing to use a state directory inside the game installation') ('unexpected refusal: ' + $_.Exception.Message)
+        }
+        Assert-True (-not (Test-Path -LiteralPath (Join-Path $fixtureGame 'state'))) 'the refusal must not create anything'
+    }
+
+    Test-Case 'LAN host refuses a dedicated-server build it was not profiled for' {
+        $tamperedProfile = Join-Path $preservationFixture 'tampered-profile.json'
+        $tamperedRegistry = Join-Path $preservationFixture 'tampered-games.json'
+        $profile = Get-Content -LiteralPath $fixtureProfile -Raw | ConvertFrom-Json
+        foreach ($binary in @($profile.binaries)) { if ($binary.role -eq 'dedicated-server') { $binary.sha256 = ('0' * 64) } }
+        $profile | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $tamperedProfile -Encoding UTF8
+        $registry = Get-Content -LiteralPath $fixtureRegistry -Raw | ConvertFrom-Json
+        $registry.games[0].profile = $tamperedProfile
+        $registry | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $tamperedRegistry -Encoding UTF8
+        try {
+            $null = Start-RenegadeLanHost -GameId 'fixture-game' -RegistryPath $tamperedRegistry -InstallRoot $fixtureGame `
+                -StatePath (Join-Path $preservationFixture 'state-tampered') -ObserveSeconds 1
+            throw 'a mismatched server hash must be refused'
+        } catch {
+            Assert-True ($_.Exception.Message -match 'hash does not match the profile') ('unexpected refusal: ' + $_.Exception.Message)
+        }
+        Assert-True (-not (Test-Path -LiteralPath (Join-Path $preservationFixture 'state-tampered'))) 'a refusal must not create a host directory'
+    }
+
+    Test-Case 'Junction creation and removal never touches the target' {
+        $target = Join-Path $script:sandbox 'junction-target'
+        New-Item -ItemType Directory -Path $target -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $target 'keep.mix') -Value 'keep me' -NoNewline
+        $link = Join-Path $script:sandbox 'junction-link'
+        $item = New-DirectoryJunction -Path $link -Target $target
+        Assert-True (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) 'a junction must be a reparse point'
+        Assert-True (Test-Path -LiteralPath (Join-Path $link 'keep.mix')) 'the target must be visible through the junction'
+        Remove-DirectoryJunction -Path $link
+        Assert-True (-not (Test-Path -LiteralPath $link)) 'the junction itself must be gone'
+        Assert-True (Test-Path -LiteralPath (Join-Path $target 'keep.mix')) 'the target contents must survive'
+        Assert-True ((Get-Content -LiteralPath (Join-Path $target 'keep.mix') -Raw) -eq 'keep me') 'the target contents must be unchanged'
+    }
+
+    Test-Case 'Junction removal refuses a real directory' {
+        $real = Join-Path $script:sandbox 'really-a-directory'
+        New-Item -ItemType Directory -Path $real -Force | Out-Null
+        try {
+            Remove-DirectoryJunction -Path $real
+            throw 'removing a real directory as a junction must be refused'
+        } catch {
+            Assert-True ($_.Exception.Message -match 'Refusing to remove a real directory') ('unexpected refusal: ' + $_.Exception.Message)
+        }
+        Assert-True (Test-Path -LiteralPath $real) 'the refused directory must still exist'
+    }
 }
 finally {
     if (Test-Path -LiteralPath $script:sandbox) {
