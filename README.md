@@ -148,6 +148,18 @@ exists in git. The script refuses forbidden paths (backups, `dist`, `tools/scrat
 the zip, and stamps entries with the commit's timestamp so the same commit rebuilds to the same
 bytes.
 
+Publishing is a second, idempotent step. It creates a missing release for a tag, rewrites the
+notes when they no longer match the package, replaces stray or mismatched assets, and then
+downloads every asset back from its public URL and compares the SHA-256 with the local file, so
+"uploaded" and "served identically" are the same claim. The token comes from the git credential
+helper and is never printed or written; running it a second time reports each tag as verified:
+
+```powershell
+.\tools\Publish-ReleasePackage.ps1 -DryRun          # show what would change
+.\tools\Publish-ReleasePackage.ps1                  # reconcile all six releases
+.\tools\Publish-ReleasePackage.ps1 -Tag twd-s2-v1.0.0
+```
+
 ## Repository layout
 
 ```
@@ -172,6 +184,7 @@ tools/                    Preservation tooling (PowerShell 5.1, no external depe
   Set-GameOfflinePatch.ps1  Applies, reports or reverts one game's patch after a build check
   Invoke-UnattendedRun.ps1  Drives an episode with nobody at the controls and logs what it saw
   New-ReleasePackage.ps1  Builds one self-contained zip and manifest per game profile
+  Publish-ReleasePackage.ps1  Publishes each package as its tag's release and verifies the bytes
   Measure-LaunchLatency.ps1  Times a launch to a usable frontend by driving it
   classify_frame.py       Frame measurement helper used by the latency instrument
 tests/                    Automated tests for the tooling (synthetic fixtures)
