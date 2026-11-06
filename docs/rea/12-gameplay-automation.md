@@ -122,3 +122,49 @@ Start-Process 'steam://rungameid/207610'          # ~30 s to the main menu
 - Episode transitions, dialogue choices, branching consequences: **untested**.
 - Audio on `100027813`: **not achieved**; see `11-audio-routing.md` for the measured
   failure and the control experiment.
+
+---
+
+## Update: re-tested with the game's audio working
+
+The earlier note left two readings of the Chapter 2 stall open, one of them "a chapter
+that cannot advance, consistent with silence". The silence has since been fixed — the
+game's own `VOICE/MUSIC/SOUND` were all at zero and are now 10/10/10, with measured
+audio at 0.44–0.79 peaks during the chapter's own cinematics
+([`13-audio-delivery.md`](13-audio-delivery.md)). The stall is unchanged.
+
+Each probe below was run **with audio playing**, in the same still shot:
+
+| Probe | Attempts | Result |
+|---|---|---|
+| Click sweep | 12 points across the picture (3 rows × 4 columns), each preceded by a pointer move | Camera swings; no dialogue, no choice UI, no scene change |
+| Walk | 8 × 2.2 s held clicks along the visible sidewalk | Lee does not move |
+| Walk (drag) | 3 held drags, including a slow steer | Lee does not move |
+| Interact | Click on Lee, click at his feet | Frame delta 1.3 then 0.2 — no state change |
+| Keys | `Q`, `E`, `R`, `F`, `Tab`, `Enter`, `Space`, digits | Frame delta **0.0** — nothing at all |
+| Menus | `Esc` → `RESUME` | Returns to the identical still shot |
+| Chapter replay | `REWIND` → `Yes`, replayed from the chapter's first frame | Cinematic plays, then the same still shot |
+
+The game is verifiably alive throughout: the window is foreground
+(`ForegroundPid` = game pid), the engine consumes ~1 core, and the audio session stays
+`Active` with a changing ambient bed.
+
+### What this establishes, and what it does not
+
+Established: the still shot is inert to every input the driver can send, with audio
+working, and it returns identically after a resume. The two earlier readings are now
+one: the chapter does not advance on this machine, and it is **not** an audio fault.
+
+Not established: *why*. A missing or failed cinematic/script asset, a scene trigger that
+depends on something this configuration never satisfies, and an engine soft-lock are all
+consistent with what was observed; nothing yet distinguishes them. The engine ships no
+log, the save container is opaque, and the scene's script lives inside the encrypted
+`ttarch` archives.
+
+### Consequence for the mission's acceptance
+
+- **Episode 1 Chapter 3 was not reached.** No dialogue choice was presented, so none was
+  recorded, and no checkpoint beyond the chapter's own was written.
+- The last save state is the chapter checkpoint; the pre-run backup taken for this
+  session, `backups/20261106-022557-audio-silence-run`, is intact.
+- Episodes 2–5, 400 Days and the episode transition remain untested.

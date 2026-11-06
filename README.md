@@ -27,7 +27,7 @@ launcher, a crack, or a content distribution project.
 | Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
 | Milestone 3 | **blocked** — offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
 | Playthrough (automated) | **in progress, stopped** — real input drives the game (click-and-hold walks, Esc menus, synthetic WASD does not move Lee); reached Episode 1 “Chapter 2: In The Yard” and replayed it from the chapter start, no story progress beyond its opening shot |
-| Audio | **identified, not routed** — `100027813` resolved to `{63b45a0d-…}` (three stale same-named endpoints rejected); game audio measured on the default endpoint after raising the silent `SOUND 0`, but Windows accepts and then ignores the per-app override, measured against a control process |
+| Audio | **routed and measured** — silence was the game's own `VOICE/MUSIC/SOUND` all at 0 (now 10/10/10); the endpoint renders (direct WASAPI tone meters 0.5) but Windows ignores per-app redirection, so a loopback mirror carries the stream to `100027813`: target peaks 0.14–0.77 during dialogue and cinematics while headphones stay at their unrelated floor, across a restart and a chapter change. Default device unchanged |
 
 Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [engine architecture](docs/rea/02-engine-and-architecture.md),
@@ -40,7 +40,8 @@ Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [400 Days and achievements](docs/rea/09-400-days-and-achievements.md),
 [episode transition](docs/rea/10-episode-transition.md),
 [audio routing](docs/rea/11-audio-routing.md),
-[gameplay automation](docs/rea/12-gameplay-automation.md).
+[gameplay automation](docs/rea/12-gameplay-automation.md),
+[audio delivery](docs/rea/13-audio-delivery.md).
 
 ## What was actually verified
 
@@ -66,6 +67,12 @@ Not claims — measured on the installed build, with logs:
   listed the slot as `Game 1 — Episode 1 — 05/11/26 16:53:35`, resumed the saved
   checkpoint on CONTINUE, and held **zero TCP connections** throughout. See
   [docs/rea/08-offline-gameplay-verification.md](docs/rea/08-offline-gameplay-verification.md).
+* **The game's audio reaches `100027813` by measurement.** A loopback mirror
+  (`tools/Start-AudioMirror.ps1`) carries the default endpoint's stream to it and the
+  endpoint's own meter shows 0.40 while the game shows 0.45; `tools/Test-AudioEndpoint.ps1`
+  proves the endpoint renders at all. Episode 1's Chapter 2 still shot does not advance,
+  with or without audio, and that is recorded as unresolved. See
+  [docs/rea/13-audio-delivery.md](docs/rea/13-audio-delivery.md).
 * **Episode content is verified present, not assumed.** All five packs exist with
   27/25/21/22/17 archives (`tools/Test-ContentPacks.ps1`).
 * **The game is drivable with real input, and its controls were measured, not

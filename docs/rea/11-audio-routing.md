@@ -110,11 +110,20 @@ or `...\Windows\Multimedia`.
 ### Exact failure, for the record
 
 `100027813` (`{63b45a0d-…}`) is enumerated **ACTIVE** (`DeviceState = 1`) and is offered
-by Windows as an output, but it never receives rendered audio: its peak meter stays
-`0.000000` even when a control process is explicitly assigned to it and is playing a
-continuous tone. The per-application assignment for it is accepted by the Settings page
-and ignored by the audio engine. That is the endpoint-level fact this project has to
-record; nothing was silently redirected to another device.
+by Windows as an output, but a process *assigned to it through the Settings page* never
+reaches it: the endpoint's peak meter stays `0.000000` even while a control process
+explicitly assigned to it plays a continuous tone. The per-application assignment is
+accepted by the page and ignored by the audio engine.
+
+**Correction, measured later the same day.** This was first written up as "the endpoint
+never renders". That is wrong, and the correction matters: a WASAPI tone rendered
+*directly* to the endpoint is metered there at the requested amplitude
+(`endpointPeak 0.5`, `docs/rea/data/audio-endpoint-100027813.json`). The endpoint
+renders fine; the broken link is the per-application redirection, and so the endpoint
+was reached by carrying the stream to it instead. See
+[`13-audio-delivery.md`](13-audio-delivery.md) for the mechanism, the measurements and
+the two further causes — the game's own volumes being zero, and Voicemeeter's bus
+device selection not being reapplied without a restart.
 
 ## Machine state after the run (verified, not asserted)
 
@@ -176,6 +185,12 @@ process restored.
 music and cinematics on that endpoint; persistence of routing across restart and across
 episode transitions (persistence cannot be shown for a routing that is never applied;
 no episode transition has been exercised); human audibility of the HDMI sink.
+
+## Outcome (superseded)
+
+Everything below documents the *failure* of the supported per-app route and the machine
+state it left behind. Delivery was subsequently achieved by a different mechanism, not
+by making this route work: see [`13-audio-delivery.md`](13-audio-delivery.md).
 
 ## Why the remaining routes are not attempted here
 

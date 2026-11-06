@@ -677,6 +677,22 @@ try {
         Assert-Equal 2 $matched.Count 'both duplicates must be reported, never one silently chosen'
     }
 
+    Test-Case 'Mirror refuses a source endpoint that does not exist' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Start-AudioMirror.ps1') -ScriptArguments @(
+            '-SourceName', 'no-such-device-xyz', '-Seconds', '1', '-Quiet'
+        )
+        Assert-Equal 2 $result.ExitCode 'a missing source endpoint must be a hard failure'
+        Assert-True ($result.StdOut -match 'source endpoint not found') 'the failure must name the missing endpoint'
+    }
+
+    Test-Case 'Endpoint probe refuses a device name that matches nothing' {
+        $result = Invoke-Script -ScriptPath (Join-Path $tools 'Test-AudioEndpoint.ps1') -ScriptArguments @(
+            '-Name', 'no-such-device-xyz', '-Seconds', '1'
+        )
+        Assert-Equal 2 $result.ExitCode 'an unmatched device must be a hard failure'
+        Assert-True ($result.StdOut -match 'no endpoint matched') 'the failure must say nothing matched'
+    }
+
     Test-Case 'Input driver maps play keys to virtual-key codes' {
         . (Join-Path $tools 'Invoke-GameInput.ps1')
         Assert-Equal 0x57 (Get-GameVirtualKey -Name 'w') 'W should be 0x57'

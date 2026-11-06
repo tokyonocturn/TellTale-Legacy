@@ -230,7 +230,7 @@
     },
     "ambiguity": "Four enumerated devices carry the name '100027813'; three are not present and only {63b45a0d-...} is active. Resolution reports the id and state rather than binding by name.",
     "currentDefaultEndpoint": "Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO)",
-    "routingApplied": false,
+    "routingApplied": true,
     "verificationTool": "tools/Get-AudioRoute.ps1",
     "baselineMeasurement": "Tone played through the default reached Voicemeeter AUX Input (peak 0.377) and Headphones (3- E7 Stereo) (peak 0.382); target peak remained 0.",
     "blocker": "Per-app routing cannot be applied on this machine: the supported Settings page accepts and persists the per-app output selection, but Windows never moves any session to it - measured for the game and for a control tone routed to 100027813, SHARP HDMI and the known-good Headphones endpoint. The target endpoint is enumerated ACTIVE yet never receives audio (peak stays 0). Synthetic policy entries are ignored and the undocumented routing factory remains excluded, so routing stays unproven and the manual click-path is documented for a machine where the override is honoured.",
@@ -246,11 +246,10 @@
       "in-game audio settings and game process restored"
     ],
     "unverified": [
-      "game audio routed to 100027813",
-      "dialogue/music/sfx/cinematics on that endpoint",
-      "persistence across restart (cannot be shown for a routing never applied)",
-      "persistence across an episode transition (no transition exercised)",
-      "human audibility of the HDMI sink"
+      "audibility at the far end of the HDMI sink - peak meters prove samples reach the engine, not sound pressure",
+      "process-exclusive capture: the mirror carries the source endpoint mix, so another app rendering to the default would be carried too",
+      "automatic start of the mirror",
+      "audio during an episode transition (no transition reached)"
     ],
     "documentation": "docs/rea/11-audio-routing.md",
     "staleDuplicateEndpointIds": [
@@ -304,6 +303,59 @@
         "policyStoreChanged": false,
         "conclusion": "The per-app override is stored by the page but not applied by the audio stack on this machine. Routing to 100027813 is not achievable through this route."
       }
+    ],
+    "routingMechanism": {
+      "name": "WASAPI loopback mirror",
+      "tools": [
+        "tools/Start-AudioMirror.ps1",
+        "tools/Test-AudioEndpoint.ps1"
+      ],
+      "documentation": "docs/rea/13-audio-delivery.md",
+      "how": "The game keeps rendering to the system default (Voicemeeter AUX Input, unchanged). The mirror captures that endpoint with WASAPI loopback and re-renders the stream to 100027813. The mixer strip that feeds the headphones is cleared of its A1 flag so the same audio is not duplicated there; the capture happens before the strip, so it is unaffected.",
+      "systemDefaultChanged": false
+    },
+    "silenceRootCause": {
+      "cause": "the game's own VOICE, MUSIC and SOUND sliders were all 0",
+      "evidence": "Game session Active with Volume 1.00 and Muted False but Peak 0.000000 at the main menu; the game's AUDIO screen showed VOICE 0 / MUSIC 0 / SOUND 0; after APPLY with 10/10/10 the session measured 0.022430 at the menu and 0.44-0.79 during the chapter cinematics.",
+      "ruledOut": [
+        "Windows per-session volume or mute (read through ISimpleAudioVolume GetMasterVolume/GetMute)",
+        "the default device or its mixer chain (a control tone measured 0.385586 downstream)",
+        "the target endpoint (a direct WASAPI tone metered 0.5 there)"
+      ],
+      "originalValues": {
+        "voice": 0,
+        "music": 0,
+        "sound": 0
+      },
+      "currentValues": {
+        "voice": 10,
+        "music": 10,
+        "sound": 10
+      },
+      "openQuestion": "an earlier restore to VOICE 10 / MUSIC 10 / SOUND 0 was read back as 10/10/0 and later found at 0/0/0; prefs.prop is opaque, so the reason is not established"
+    },
+    "endpointCapability": {
+      "result": "the endpoint renders",
+      "measurement": "tools/Test-AudioEndpoint.ps1 -Name \"100027813\": endpointPeak 0.5, 292320 frames written",
+      "control": "the same probe on Headphones measured 0.6030891",
+      "correction": "the earlier claim that 100027813 never receives rendered audio was wrong; the broken link is per-application redirection"
+    },
+    "measuredRouting": {
+      "sourcePeak": 0.452847,
+      "targetPeak": 0.40361,
+      "headphonesPeak": 0.02082,
+      "otherEndpointsPeak": 0,
+      "note": "measured at the same moment during in-game audio; headphones carried the user's unrelated audio and did not follow the game"
+    },
+    "persistence": {
+      "acrossGameRestart": "yes - fresh launch measured target 0.0156 on the splash and 0.0163-0.0202 at the menu",
+      "acrossChapterChange": "yes - chapter load and rewind measured target 0.1429-0.7685 while the game peaked 0.1607-0.6814",
+      "withGameExited": "target fell to 0, so the peaks observed are carried from the game and nothing else"
+    },
+    "sideEffects": [
+      "in-game volumes raised from 0/0/0 to 10/10/10 (game prefs only, reversible on the AUDIO screen)",
+      "Voicemeeter Strip[4].A1 cleared so the game audio is not duplicated on the headphones; restore with Strip[4].A1 = 1",
+      "the mirror must be running for the audio to reach the endpoint; it is a process, not a service"
     ]
   },
   "gameplayAutomation": {
@@ -324,7 +376,7 @@
       "chapterReplayedFromStart": true,
       "storyProgressBeyondChapterOpening": false
     },
-    "stoppedAt": "Static shot of Lee in the yard after the chapter opening cinematic; about five minutes of walking, clicking, camera sweeps and key presses produced no state change, and Esc -> RESUME returned to the identical shot.",
+    "stoppedAt": "Chapter 2 \"In The Yard\" still shot is inert to every input, re-tested with audio working (click sweep, walking, dragging, key probes, resume, chapter replay); cause not established",
     "openReadings": [
       "a hotspot that was not found (cursor and hotspot highlight are absent from captured frames)",
       "a chapter that cannot advance on this machine (the game audio session stayed active with peak 0 and no dialogue audio or subtitles appeared)"
@@ -347,6 +399,9 @@
         "prefs.prop"
       ],
       "preRunBackup": "backups/20261106-014855-episode-run-1"
-    }
+    },
+    "audioWasNotTheCause": "the chapter stalls identically with measured game audio at 0.44-0.79 peaks",
+    "chapter3Reached": false,
+    "dialogueChoiceRecorded": false
   }
 }
