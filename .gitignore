@@ -10,3 +10,6 @@ backups/
 threads/
 tools/scratch/
 *.log
+
+# Publish archives
+ dist/

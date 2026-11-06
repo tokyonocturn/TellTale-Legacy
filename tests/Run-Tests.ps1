@@ -900,7 +900,7 @@ try {
     $vdfText = @(
         '"users"',
         '{',
-        '    "76561199229229392"',
+        '    "76561197960287930"',
         '    {',
         '        "AccountName"        "tester"',
         '        "WantsOfflineMode"        "0"',

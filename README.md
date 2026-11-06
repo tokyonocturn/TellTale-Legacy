@@ -25,10 +25,11 @@ launcher, a crack, or a content distribution project.
 | Content | 112 `ttarch` v9 archives, 3.55 GiB, 5 content groups |
 | Milestone 1 | **complete** — inventory, profile, offline startup verified, backup/restore verified |
 | Offline dependencies | **mapped** — one compiled-in publisher URL (`https://meta.telltalegames.com/1/`), a persistent `Established` TLS socket to `api.telltalegames.com` during play, no other endpoints. 400 Days is not installed |
-| Offline acceptance | **partly verified** — with `api`/`meta.telltalegames.com` blocked the game cold-launches to its menu, loads an existing save into a live scene, and holds **zero** network connections; the ending, the episode transition and Episodes 2–5 are still UNTESTED, and 400 Days is not installed |
+| Offline acceptance | **verified per episode** — with `api`/`meta.telltalegames.com` blocked, Episodes 2, 3, 4 and 5 each load into a live scene and take real input (movement, widgets, dialogue) at zero remote connections, and Episode 1's finale plays from an existing save. Not proven: Episode 1's credits, the ending-driven 1 → 2 transition, downstream branching. 400 Days is not installed |
+| Offline launch wait | **fixed and measured** — when the machine has no internet route the client used to leave the game unlaunched for a minute or more; with Steam in Offline Mode under the same cut-off the frontend is usable in 11.6 s (`tools/Set-SteamOfflineMode.ps1`, [doc 19](docs/rea/19-offline-launch-stall.md)) |
 | Milestone 2 | **complete** — real gameplay saved, closed, restarted and resumed with the publisher API blocked |
 | Milestone 3 | **blocked** — offline launch with both publisher domains blocked, Episode 2 content verified present; Episode 1 completion and the transition need an attended playthrough |
-| Playthrough (automated) | **in progress** — the input driver was delivering almost nothing: captured coordinates were 26 px low (window vs client) and presses without a preceding mouse-move event were discarded by the engine. Both are fixed; the save now loads through the real frontend and Lee walks, the camera follows and the mouse pans. Still at Episode 1 “Chapter 2: In The Yard”, with the remaining route documented |
+| Playthrough (automated) | **partial** — the driver's two defects (26 px window/client offset, presses without a preceding mouse-move) are fixed. Episode 1's finale was then driven offline to its last scene and Episodes 2–5 were each started and advanced by injected input; Episode 1's credits and the ending-driven transition remain open ([doc 18](docs/rea/18-multiepisode-offline-run.md)) |
 | Audio verification | **re-checkable** — `tools/Assert-AudioDelivery.ps1` resolves the endpoint by device id, refuses any fallback, and returns a named verdict with a distinct exit code (`endpoint-missing`, `endpoint-inactive`, `no-signal-on-target`, `default-changed`, `mirror-not-running`). Verified during live play at 0.474 peak with the default unchanged |
 | Audio | **routed and measured** — silence was the game's own `VOICE/MUSIC/SOUND` all at 0 (now 10/10/10); the endpoint renders (direct WASAPI tone meters 0.5) but Windows ignores per-app redirection, so a loopback mirror carries the stream to `100027813`: target peaks 0.14–0.77 during dialogue and cinematics while headphones stay at their unrelated floor, across a restart and a chapter change. Default device unchanged |
 
@@ -48,7 +49,9 @@ Full analysis: [forensic inventory](docs/rea/01-forensic-inventory.md),
 [session evidence](docs/rea/14-session-evidence.md),
 [offline dependency map](docs/rea/15-offline-dependency-map.md),
 [offline acceptance matrix](docs/rea/16-offline-acceptance-matrix.md),
-[offline acceptance run](docs/rea/17-offline-run.md).
+[offline acceptance run](docs/rea/17-offline-run.md),
+[multi-episode offline run](docs/rea/18-multiepisode-offline-run.md),
+[offline launch stall](docs/rea/19-offline-launch-stall.md).
 
 ## What was actually verified
 
@@ -110,6 +113,10 @@ tools/                    Preservation tooling (PowerShell 5.1, no external depe
   Invoke-OfflineProbe.ps1 Reversible hosts-level API block for offline testing
   Get-SaveArtifacts.ps1   Save container inventory, byte diff and drift detection
   Test-ContentPacks.ps1   Verifies every profile episode has archives on disk
+  Set-SteamOfflineMode.ps1  Puts Steam in Offline Mode so an offline launch does not wait
+  Set-OfflineLaunchPatch.ps1  Pins the publisher hostnames to loopback (byte-reversible)
+  Measure-LaunchLatency.ps1  Times a launch to a usable frontend by driving it
+  classify_frame.py       Frame measurement helper used by the latency instrument
 tests/                    Automated tests for the tooling (synthetic fixtures)
 docs/                     REA findings, architecture, installation, legal boundaries
   verification-scenarios.json  Which claims are automated vs attended gameplay
@@ -132,6 +139,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\Start-ObservedSession.
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-SaveArtifacts.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\Get-SaveArtifacts.ps1 `
     -BaselinePath docs\rea\data\save-artifacts.json   # exit 0 identical, 3 = drift
+
+# 5. Playing with no internet? Put the client in Offline Mode first (elevated), revert after.
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Set-SteamOfflineMode.ps1 -Action Enable
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\Set-SteamOfflineMode.ps1 -Action Disable
 
 # 5. Is every episode's content really installed?
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\Test-ContentPacks.ps1
